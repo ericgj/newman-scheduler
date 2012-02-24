@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>scheduler-routes</title></head><body><br style="font-family: Helvetica,Arial,sans-serif;">
+<table style="text-align: left; width: 100%; font-family: Helvetica,Arial,sans-serif;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;">Request<br>
+      </td>
+      <td style="vertical-align: top; font-weight: bold;">To<br>
+      </td>
+      <td style="vertical-align: top; font-weight: bold;">Subject<br>
+      </td>
+      <td style="vertical-align: top; font-weight: bold; width: 142px;">Body<br>
+      </td>
+      <td style="vertical-align: top; font-weight: bold; width: 525px;">Response<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">Send in my availability for the week of Feb 2<br>
+      </td>
+      <td style="vertical-align: top;">c+availability@domain<br>
+      </td>
+      <td style="vertical-align: top;">2012-02-20 +09:00&nbsp; (timezone offset)<br>
+      <br>
+If only week, then assume UTC timezone<br>
+      <br>
+If blank, then assume current Monday and UTC<br>
+      <br>
+      <br>
+      </td>
+      <td style="vertical-align: top; width: 142px;">Mon Wed Fri<br>
+3pm - 7pm<br>
+      <br>
+Tue Thu<br>
+11:30am - 6pm<br>
+      </td>
+      <td style="vertical-align: top; width: 525px;"><span style="text-decoration: underline;">scheduler:</span> none (store availability record)<br>
+      <span style="text-decoration: underline;">mail_whale:</span> Forward to subscribers of "availability" mailing list<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">Specify the date or date range of an event and its duration<br>
+      </td>
+      <td style="vertical-align: top;">c+some-event.schedule@domain<br>
+      </td>
+      <td style="vertical-align: top;">(none)<br>
+
+      </td>
+      <td style="vertical-align: top;">week of 2012-02-20<br>
+90 min<br>
+
+      <br>
+
+-or-<br>
+
+
+      <br>
+
+
+on 2012-02-22<br>
+60 min<br>
+
+      <br>
+
+If duration not specified, assume 60.<br>
+      </td>
+      <td style="vertical-align: top;"><span style="text-decoration: underline;">scheduler</span>:
+store event record keyed by list-id ("some-event"); reply with an
+invitation email to list subscribers to put in their availability<br>
+      <span style="text-decoration: underline;">mail_whale</span>: none (processing halted by scheduler)<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">What are the current best times to meet for all subscribers to some-event?<br>
+      </td>
+      <td style="vertical-align: top;">c+some-event.schedule-list@domain<br>
+      </td>
+      <td style="vertical-align: top;">(none)<br>
+      </td>
+      <td style="vertical-align: top; width: 142px;">(ignored)<br>
+      </td>
+      <td style="vertical-align: top; width: 525px;"><span style="text-decoration: underline;">scheduler:</span> Reply with best scheduled times to subscribers of "some-event" mailing list<br style="text-decoration: underline;">
+      <span style="text-decoration: underline;">mail_whale:</span> none (processing halted by scheduler)<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">What are the current available timeslots for some-user for some-event?<br>
+      </td>
+      <td style="vertical-align: top;">c+some-event.schedule-show@domain<br>
+      </td>
+      <td style="vertical-align: top;">some-user@domain<br>
+      </td>
+      <td style="vertical-align: top; width: 142px;">(ignored)<br>
+      </td>
+      <td style="vertical-align: top; width: 525px;"><span style="text-decoration: underline;">scheduler:</span>
+Reply with all available times for some-user@domain to sender. The user
+doesn't necessarily have to be a subscriber to the "some-event" list.<br>
+      <span style="text-decoration: underline;">mail_whale:</span> none (processing halted by scheduler)<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+  <br style="font-family: Helvetica,Arial,sans-serif;">
+
+</body></html>
