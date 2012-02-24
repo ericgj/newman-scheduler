@@ -105,6 +105,19 @@ module EventUnitTests
   
   # -----
   
+  describe 'Event delegates to Portera::Event' do
+  
+    before do
+      @subject = Event.new { }
+    end
+    
+    it 'should respond to participants' do
+      @subject.participants
+      assert true
+    end
+    
+  end
+  
   Fixtures.each do |fixture|
     describe "Event.from_email, #{fixture[:desc]}" do
     
