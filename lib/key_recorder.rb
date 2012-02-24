@@ -10,8 +10,10 @@ module Newman
       self.column = column
       self.store  = store
 
-      store.write do |data|
-        data[:columns][column]     ||= Hash.new{|h,k| h={}}
+      unless store.read { |data| data[:columns][column] }
+        store.write do |data|
+          data[:columns][column]     ||= Hash.new{|h,k| h={}}
+        end
       end
     end
 
