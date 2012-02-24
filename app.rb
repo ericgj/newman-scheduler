@@ -45,8 +45,9 @@ scheduler = Newman::Application.new do
   # Specify the date or date-range of an event and its duration
   # Responds to entire list with email requesting availability
   #
-  # Note that if duration and range not specified in body of request email,
-  # defaults to hour-long event happening on date the email was sent.
+  # Note that if duration and range and name not specified in request email,
+  # defaults to hour-long event happening on date the email was sent,
+  # named the same as the list_id
   #
   to(:tag, "{list_id}.schedule{update}") do
     list_id = params[:list_id]
