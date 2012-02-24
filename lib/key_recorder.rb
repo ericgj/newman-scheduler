@@ -1,7 +1,7 @@
 # nearly identical to Newman::Record, but elements indexed via explicit key 
 # instead of array index
 module Newman
-  Record = Struct.new(:column, :id, :contents)
+  #Record = Struct.new(:column, :id, :contents)
 
   class KeyRecorder
     include Enumerable

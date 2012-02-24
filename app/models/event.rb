@@ -1,3 +1,5 @@
+require 'delegate'
+
 class Event < DelegateClass(::Portera::Event)
 
   def self.from_email(email, defaults={})

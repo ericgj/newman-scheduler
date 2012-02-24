@@ -1,2 +1,4 @@
 *.store
 config/*.rb
+.bundle
+
