@@ -1,6 +1,8 @@
 require "bundler"
 Bundler.require
 
+require File.expand_path('app_libraries', File.dirname(__FILE__))
+require File.expand_path('app_models', File.dirname(__FILE__))
 
 scheduler = Newman::Application.new do
 
@@ -10,37 +12,34 @@ scheduler = Newman::Application.new do
       Newman::Store.new(settings.application.__send__(key))
     end
     
-    # list keyed by list_id; elements keyed by email
+    # list keyed by list_id; elements keyed by insertion order
     def mailing_list(id)
       Newman::MailingList.new(id, store)
     end
     
     # list keyed by date-range; elements keyed by email
     def availability_list(id)
-      AvailabilityList.new(id, store(:availability))
+      KeyedList.new(id, store(:availability))
     end
     
-    # elements keyed by list_id
+    # elements keyed by name
     def event_list
-      EventList.new(store(:events))
+      KeyedList.new(nil, store(:events))
     end
     
   end
   
   match :list_id,  "[^\.]+"
   match :update,   "$"
-  match :show,     "\-show"
-  match :index,    "\-list"
-  match :delete,   "\-delete"
+  match :show,     "\-show$"
+  match :index,    "\-list$"
+  match :delete,   "\-delete$"
   
   # Send in my availability for the specified week and timezone
   # Note: no response; assumes mailing-list app will do that
   to(:tag, "availability") do
     avail = Availability.from_email(request)
-    availability_list(avail.range).transaction do |list|
-      list.delete(avail.email)
-      list.add(avail.email, avail)
-    end
+    availability_list(avail.range).update(avail.email) { avail }
   end
   
   # Specify the date or date-range of an event and its duration
@@ -48,9 +47,7 @@ scheduler = Newman::Application.new do
   to(:tag, "{list_id}.schedule{update}") do
     list_id = params[:list_id]
     event = Event.from_email(request, :id => list_id)
-    event_list.transaction do |list|
-      list.delete(event.id)
-      list.add(event.id, event)
+    event_list.update(event.id) { event }
     end
     subscribers = mailing_list(list_id).subscribers
     
@@ -72,12 +69,12 @@ scheduler = Newman::Application.new do
     subscribers = mailing_list(list_id).subscribers
     if event && !subscribers.empty?
      
-      avails = availability_list(event.range).all
+      avails = availability_list(event.range)
       subscriber_avails = avails.select {|person| 
         subscribers.include?(person.email)
       }
       
-      subscribers_avails.each do |person|
+      subscriber_avails.each do |person|
         event.participants << person
       end
       
@@ -105,10 +102,10 @@ scheduler = Newman::Application.new do
     email = request.subject.strip
     email = sender if email.empty?    # default to sender if no subject
     
-    event = event_list.find(list_id)
+    event = event_list.read(list_id)
     if event
     
-      avail = availability_list(event.range).find(email)
+      avail = availability_list(event.range).read(email)
       
       if avail
         event.participants << avail
