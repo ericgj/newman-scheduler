@@ -27,7 +27,7 @@ class Event < DelegateClass(::Portera::Event)
     attr_accessor :name, :duration, :range
     
     DURATION_MATCHER = /^\s*(\d+)/
-    RANGE_MATCHER    = /^\s*(week\s+of|on)\s+([^\s]*)/i
+    RANGE_MATCHER    = /^\s*(week\s+of|on)\s+(.+)\s*$/i
     
     def initialize(email)
       self.raw = email
