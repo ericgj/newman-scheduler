@@ -29,6 +29,8 @@ class Event < DelegateClass(::Portera::Event)
     
     def initialize(email)
       self.raw = email
+      parse_subject
+      parse_body
     end
     
     private
