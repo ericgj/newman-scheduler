@@ -108,7 +108,7 @@ module EventUnitTests
   describe 'Event delegates to Portera::Event' do
   
     before do
-      @subject = Event.new { }
+      @subject = ::Event.new { }
     end
     
     it 'should respond to participants' do
@@ -123,7 +123,7 @@ module EventUnitTests
     
       before do
         input = DummyEmail.new fixture[:subject], fixture[:body]
-        @subject = Event.from_email(input, fixture[:defaults])
+        @subject = ::Event.from_email(input, fixture[:defaults])
       end
       
       it 'should have the expected name' do

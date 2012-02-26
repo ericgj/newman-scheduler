@@ -4,7 +4,7 @@ class Event < DelegateClass(::Portera::Event)
 
   def self.from_email(email, defaults={})
     parsed = Email.new(email)
-    event = new(parsed.name || defaults[:name]) do
+    new(parsed.name || defaults[:name]) do
       duration (parsed.duration || defaults[:duration])
       range    (parsed.range || defaults[:range])
     end
@@ -69,7 +69,7 @@ class Event < DelegateClass(::Portera::Event)
     end
     
     def raw_lines
-      lines = raw.text_part.decoded.split("\n")
+      raw.text_part.decoded.split("\n")
     end
     
   end
