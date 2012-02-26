@@ -1,5 +1,4 @@
 require 'delegate'
-require 'strscan'
 
 class Participant < DelegateClass(::Portera::Participant)
 
@@ -101,13 +100,7 @@ class Participant < DelegateClass(::Portera::Participant)
     end
 
     def parse_available_days(text)
-      #s = StringScanner.new(text)
       days = text.split(/\s+/).map(&:to_sym)
-      
-      #until s.eos?
-      #  token = s.scan(/\w+/)
-      #  days << token.to_sym if token
-      #end
       block_given? ? yield(days) : days
     end
     
