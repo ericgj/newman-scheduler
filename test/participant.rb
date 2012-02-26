@@ -45,7 +45,7 @@ module ParticipantUnitTests
         {:days => [1,3,5], :from => '12:30pm', :to => '20:00', :utc_offset => '+09:00'}
       ]
     },
-    { :desc    => 'email has subject and body, date and offset specified, two sets of availability',
+    { :desc    => 'email has subject and body, date and offset specified, two sets of available dates',
       :from    => 'raj@boom.com',
       :display_name => 'Rufus Jones',
       :date    => Time.parse("Sun Mar 11 14:13 +09:00 2012"),
@@ -82,6 +82,35 @@ module ParticipantUnitTests
         {:days => [1,3,5], :from => '12:30pm', :to => '20:00', :utc_offset => '-08:00'},
         {:days => [1,3,5], :from => '21:30',   :to => '22:00', :utc_offset => '-08:00'},
         {:days => [1,3,5], :from => '23:20',   :to => '00:30', :utc_offset => '-08:00'}        
+      ]
+    },
+    { :desc    => 'email has subject and body, date and offset specified, multple sets of availability',
+      :from    => 'tiger@golf.com',
+      :display_name => 'T. Woods',
+      :date    => Time.parse("Sun Mar 11 14:13 -08:00 2012"),
+      :subject => ' 12-Mar-2012  UTC',
+      :body    => ['',
+                   '  mon   wed  fri ', 
+                   '1:00pm   - 2:00pm  ', 
+                   '3:30pm -  4:30pm', 
+                   '  8:20pm - 10:30pm',
+                   '',
+                   '',                   
+                   'Tue sat',
+                   '10:00   - 15:15',
+                   '17:15  - 19:30',
+                   ''
+                  ].join("\r\n"),
+      :defaults => {},
+      :expected_name   => 'T. Woods',
+      :expected_email  => 'tiger@golf.com',
+      :expected_range  => Date.civil(2012,3,12)...Date.civil(2012,3,19),
+      :expected_availables => [
+        {:days => [1,3,5], :from => '1:00pm', :to => '2:00pm',  :utc_offset => 'UTC'},
+        {:days => [1,3,5], :from => '3:30pm', :to => '4:30pm',  :utc_offset => 'UTC'},
+        {:days => [1,3,5], :from => '8:20pm', :to => '10:30pm', :utc_offset => 'UTC'},
+        {:days => [2,6],   :from => '10:00',  :to => '15:15',   :utc_offset => 'UTC'},
+        {:days => [2,6],   :from => '17:15',  :to => '19:30',   :utc_offset => 'UTC'}        
       ]
     }    
   ]
