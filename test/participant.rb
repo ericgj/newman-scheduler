@@ -33,9 +33,10 @@ module ParticipantUnitTests
     { :desc    => 'email has subject and body, date and offset specified, one set of availability',
       :from    => 'qbert@hello.com',
       :display_name => 'Dr. Quinn',
-      :date    => Time.parse("Mon Mar 12 14:13 +09:00 2012"),
+      :date    => Time.parse("Sun Mar 11 14:13 +09:00 2012"),
       :subject => '12-Mar-2012  +09:00',
-      :body    => ['Mon Wed Fri', '12:30pm - 20:00'].join("\r\n"),
+      :body    => ['Mon Wed Fri', 
+                   '12:30pm - 20:00'].join("\r\n"),
       :defaults => {},
       :expected_name   => 'Dr. Quinn',
       :expected_email  => 'qbert@hello.com',
@@ -43,8 +44,46 @@ module ParticipantUnitTests
       :expected_availables => [
         {:days => [1,3,5], :from => '12:30pm', :to => '20:00', :utc_offset => '+09:00'}
       ]
-    }
-
+    },
+    { :desc    => 'email has subject and body, date and offset specified, two sets of availability',
+      :from    => 'raj@boom.com',
+      :display_name => 'Rufus Jones',
+      :date    => Time.parse("Sun Mar 11 14:13 +09:00 2012"),
+      :subject => '12-Mar-2012  +09:00',
+      :body    => ['mon wed fri', 
+                   '12:30pm - 20:00', 
+                   '',
+                   'Tuesday Thursday',
+                   '10:00   - 15:15'].join("\r\n"),
+      :defaults => {},
+      :expected_name   => 'Rufus Jones',
+      :expected_email  => 'raj@boom.com',
+      :expected_range  => Date.civil(2012,3,12)...Date.civil(2012,3,19),
+      :expected_availables => [
+        {:days => [1,3,5], :from => '12:30pm', :to => '20:00', :utc_offset => '+09:00'},
+        {:days => [2,4],   :from => '10:00',   :to => '15:15', :utc_offset => '+09:00'}
+      ]
+    },
+    { :desc    => 'email has subject and body, date and offset specified, three sets of available times',
+      :from    => 'sassy@example.net',
+      :display_name => 'Siddhartha',
+      :date    => Time.parse("Sun Mar 11 14:13 -08:00 2012"),
+      :subject => '12-Mar-2012  -08:00',
+      :body    => ['  mon   wed  fri ', 
+                   '12:30pm   - 20:00  ', 
+                   '21:30 -  22:00', 
+                   '  23:20 - 00:30' 
+                  ].join("\r\n"),
+      :defaults => {},
+      :expected_name   => 'Siddhartha',
+      :expected_email  => 'sassy@example.net',
+      :expected_range  => Date.civil(2012,3,12)...Date.civil(2012,3,19),
+      :expected_availables => [
+        {:days => [1,3,5], :from => '12:30pm', :to => '20:00', :utc_offset => '-08:00'},
+        {:days => [1,3,5], :from => '21:30',   :to => '22:00', :utc_offset => '-08:00'},
+        {:days => [1,3,5], :from => '23:20',   :to => '00:30', :utc_offset => '-08:00'}        
+      ]
+    }    
   ]
   
   

@@ -68,7 +68,9 @@ class Participant < DelegateClass(::Portera::Participant)
       state = nil
       raw_lines.inject([]) do |current_days, line|
         clean_line = line.chomp.strip
-        (state = nil and next current_days) if clean_line.empty?
+        if clean_line.empty?
+          state = nil; next []
+        end
         case state
         when nil
           parse_available_days(clean_line) do |days|
