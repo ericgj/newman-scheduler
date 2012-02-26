@@ -45,6 +45,7 @@ module ParticipantUnitTests
         {:days => [1,3,5], :from => '12:30pm', :to => '20:00', :utc_offset => '+09:00'}
       ]
     },
+    
     { :desc    => 'email has subject and body, date and offset specified, two sets of available dates',
       :from    => 'raj@boom.com',
       :display_name => 'Rufus Jones',
@@ -64,6 +65,7 @@ module ParticipantUnitTests
         {:days => [2,4],   :from => '10:00',   :to => '15:15', :utc_offset => '+09:00'}
       ]
     },
+    
     { :desc    => 'email has subject and body, date and offset specified, three sets of available times',
       :from    => 'sassy@example.net',
       :display_name => 'Siddhartha',
@@ -84,17 +86,18 @@ module ParticipantUnitTests
         {:days => [1,3,5], :from => '23:20',   :to => '00:30', :utc_offset => '-08:00'}        
       ]
     },
+    
     { :desc    => 'email has subject and body, date and offset specified, multple sets of availability',
       :from    => 'tiger@golf.com',
       :display_name => 'T. Woods',
       :date    => Time.parse("Sun Mar 11 14:13 -08:00 2012"),
       :subject => ' 12-Mar-2012  UTC',
-      :body    => ['',
+      :body    => ['  ',
                    '  mon   wed  fri ', 
                    '1:00pm   - 2:00pm  ', 
                    '3:30pm -  4:30pm', 
                    '  8:20pm - 10:30pm',
-                   '',
+                   '  ',
                    '',                   
                    'Tue sat',
                    '10:00   - 15:15',
@@ -115,6 +118,7 @@ module ParticipantUnitTests
     }    
   ]
   
+  # ------
   
   Fixtures.each do |fixture|
     describe "Participant.from_email, #{fixture[:desc]}" do
