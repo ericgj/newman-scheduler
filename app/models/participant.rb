@@ -47,7 +47,7 @@ class Participant < DelegateClass(::Portera::Participant)
     attr_accessor :raw
     
     def parse_from
-      self.email = raw.sender
+      self.email = raw.from.first.to_s
       self.name  = raw[:from].display_names.first
     end
     
@@ -92,7 +92,9 @@ class Participant < DelegateClass(::Portera::Participant)
     
     def parse_range(dtexpr)
       dt = Time.parse(dtexpr) rescue nil
-      (self.range = nil and return) unless dt
+      unless dt
+        self.range = nil; return
+      end
       monday = dt.to_date + (1 - (dt.to_date.wday%7))
       self.range = monday...(monday+7)
     end
@@ -113,7 +115,11 @@ class Participant < DelegateClass(::Portera::Participant)
     end
     
     def raw_lines
-      raw.text_part.decoded.split("\n")
+      if raw.body.multipart?
+        raw.text_part
+      else
+        raw
+      end.decoded.split("\n")
     end
 
   end

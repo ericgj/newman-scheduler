@@ -4,7 +4,7 @@ Bundler.require
 require File.expand_path('app_libraries', File.dirname(__FILE__))
 require File.expand_path('app_models', File.dirname(__FILE__))
 
-scheduler = Newman::Application.new do
+App = Newman::Application.new do
 
   helpers do
     
@@ -19,12 +19,12 @@ scheduler = Newman::Application.new do
     
     # list keyed by date-range; elements keyed by email
     def availability_list(id)
-      Newman::KeyRecorder.new(id, store(:availability))
+      Newman::KeyRecorder.new(id, store(:availability_db))
     end
     
     # elements keyed by list_id
     def event_list
-      Newman::KeyRecorder.new('event', store(:events))
+      Newman::KeyRecorder.new('event', store(:events_db))
     end
     
     def default_event_params(list_id)
@@ -44,11 +44,17 @@ scheduler = Newman::Application.new do
   match :delete,   "\-delete$"
   
   # Send in my availability for the specified week and timezone
-  # Note: no response; assumes mailing-list app will do that
+  # Responds with a confirmation email; note if you have a mailing list app
+  # downstream of this, instead the request will be forwarded to the list.
   to(:tag, "availability") do
     avail = Participant.from_email(request)
     availability_list(avail.range).update(avail.email) { avail }
+    respond(
+      :subject => "[availability] #{avail.name} " + 
+                  "#{avail.range.begin}...#{avail.range.end}"
+    )
   end
+
   
   # Specify the date or date-range of an event and its duration
   # Responds to entire list with email requesting availability
@@ -85,9 +91,9 @@ scheduler = Newman::Application.new do
   to(:tag, "{list_id}.schedule{index}") do
     list_id = params[:list_id]
     
-    event = event_list.read(list_id)
+    event_rec = event_list.read(list_id)
     subscribers = mailing_list(list_id).subscribers
-    unless event 
+    unless event_rec
       # TODO unknown event
       next
     end
@@ -97,7 +103,8 @@ scheduler = Newman::Application.new do
       next
     end
     
-    avails = availability_list(event.week)
+    event = event_rec.contents
+    avails = availability_list(event.week).map(&:contents)
     subscriber_avails = avails.select {|person| 
       subscribers.include?(person.email)
     }
@@ -132,15 +139,16 @@ scheduler = Newman::Application.new do
     email = request.subject.strip
     email = sender if email.empty?    # default to sender if no subject
     
-    event = event_list.read(list_id)
-    unless event
+    event_rec = event_list.read(list_id)
+    unless event_rec
       # TODO unknown event
       next
     end
     
-    avail = availability_list(event.week).read(email)
+    event = event_rec.contents
+    avail_rec = availability_list(event.week).read(email)
     
-    unless avail
+    unless avail_rec
       respond(
         :subject => "[#{event.name}] available times unknown for: #{email}",
         :body    => template('schedule/error-no-availability'),
@@ -149,6 +157,7 @@ scheduler = Newman::Application.new do
       next
     end    
     
+    avail = avail_rec.contents
     event.participants << avail
         
     respond(

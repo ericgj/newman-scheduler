@@ -12,7 +12,7 @@ module Newman
 
       unless store.read { |data| data[:columns][column] }
         store.write do |data|
-          data[:columns][column]     ||= Hash.new{|h,k| h={}}
+          data[:columns][column]     ||= {}
         end
       end
     end
@@ -26,6 +26,7 @@ module Newman
       end
     end
 
+    # TODO: raise error if key exists?
     def create(key, contents)
       store.write do |data| 
         

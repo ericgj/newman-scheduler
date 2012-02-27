@@ -4,8 +4,10 @@ module ParticipantUnitTests
 
   class DummyEmail < Struct.new(:from, :display_name, :date, :subject, :body)
         
-    def sender
-      self.from
+    def initialize(*args)
+      super
+      self.from = Array(self.from)
+      self.body.extend( Module.new { def multipart?; false; end } )
     end
     
     def display_names
