@@ -51,17 +51,17 @@ Everyone on the list gets the response:
     
     week of Mon 12 Mar (1hr 30min) 
     ------------------------------
-    Mon 12 Mar,  3:00pm UTC -  6:00pm UTC
+    Mon 12 Mar  3:00pm UTC -  6:00pm UTC
       Hoban Washburne
       Inara Serra
       Jayne Cobb
       Malcolm Reynolds
       Zoe Washburne
-    Wed 14 Mar,  3:00pm UTC -  6:00pm UTC
+    Wed 14 Mar  3:00pm UTC -  6:00pm UTC
       Inara Serra
       Jayne Cobb
       Zoe Washburne
-    Thu 15 Mar,  3:00pm UTC -  6:00pm UTC
+    Thu 15 Mar  3:00pm UTC -  6:00pm UTC
       Inara Serra
       Jayne Cobb
       Zoe Washburne
@@ -93,6 +93,6 @@ Only the requester gets the response:
 
 ### Remaining work
 
-  - test interactions 3 & 4 above
+  - test interactions <del>3 &</del> 4 above
   - test with mail_whale downstream from it
   
