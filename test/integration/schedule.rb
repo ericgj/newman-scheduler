@@ -41,7 +41,8 @@ module IntegrationTests
         :expected_name     => 'A picnic',
         :expected_duration => 90,
         :expected_range    => Date.civil(2012,3,12)...Date.civil(2012,3,19),
-        :expected_response_subject => "[A picnic] Requesting your availability"
+        :expected_response_subject => "[A picnic] Requesting your availability",
+        :expected_response_matchers => [/week of Mon 12 Mar/i, /1hr 30min/i]
       },
 
       :schedule_create => {
@@ -54,7 +55,8 @@ module IntegrationTests
         :expected_name     => 'A picnic',
         :expected_duration => 90,
         :expected_range    => Date.civil(2012,3,12)...Date.civil(2012,3,19),
-        :expected_response_subject => "[A picnic] Requesting your availability"
+        :expected_response_subject => "[A picnic] Requesting your availability",
+        :expected_response_matchers => [/week of Mon 12 Mar/i, /1hr 30min/i]
       }
       
     }
@@ -105,7 +107,14 @@ module IntegrationTests
                        response.subject,
                        response.to_s
                        
+          fixture[:expected_response_matchers].each do |matcher|
+            assert_match matcher, response.body.encoded
+          end
+          
           assert_equal @subscribers, response.bcc
+          assert_equal [fixture[:email]], response.from
+          assert_equal [settings.application.availability_email], 
+                       response.reply_to
         end
         
       end

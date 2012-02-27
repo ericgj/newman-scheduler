@@ -13,6 +13,14 @@ module Presenters
       present_event
     end
     
+    def range
+      present_date_range(super)
+    end
+    
+    def duration
+      present_duration(super)
+    end
+    
     def best
       coalesced.best
     end
@@ -34,7 +42,17 @@ module Presenters
     private
     
     def present_event
-       "best times #{present_date_range(range)} (#{duration} mins)"
+       "#{present_date_range(range)} (#{present_duration(duration)})"
+    end
+    
+    def present_duration(n)
+      min = n%60
+      hr  = n/60
+      if hr
+        "#{hr}hr #{min}min"
+      else
+        "#{min}min"
+      end
     end
     
     def present_date_range(r)

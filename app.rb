@@ -5,6 +5,19 @@ require File.expand_path('app_libraries', File.dirname(__FILE__))
 require File.expand_path('app_models', File.dirname(__FILE__))
 require File.expand_path('app_presenters', File.dirname(__FILE__))
 
+#=================== patch
+module Newman
+  class Controller
+  
+    def template(name,locals={})
+      Tilt.new(Dir.glob("#{settings.service.templates_dir}/#{name}.*").first)
+          .render(self,locals)
+    end
+    
+  end
+end
+#==================
+    
 App = Newman::Application.new do
 
   helpers do
@@ -80,11 +93,12 @@ App = Newman::Application.new do
     
     event = Presenters::SimpleEvent.new(event)
     
-    forward_message(
+    respond(
+        :from     => sender,
+        :bcc => subscribers.join(', '),
+        :reply_to => settings.application.availability_email,
         :subject  => "[#{event.name}] Requesting your availability",
-        #:body     => template('event/show'),
-        :bcc => subscribers.join(', ')#,
-        #:reply_to => settings.application.availability_email
+        :body     => template('event/show', :event => event, :subscribers => subscribers)
     )
   end
   
