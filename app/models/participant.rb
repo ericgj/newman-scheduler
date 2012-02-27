@@ -32,7 +32,7 @@ class Participant < DelegateClass(::Portera::Participant)
     Available = Struct.new(:days, :from, :to)
     
     RANGE_MATCHER      = /^\s*([^\s]+)/i
-    OFFSET_MATCHER     = /([\-\+\d\:]+)\s*$/i
+    OFFSET_MATCHER     = /\s*([\-\+]\d\d\:\d\d)\s*$/i
     TIME_RANGE_MATCHER = /^\s*([^\s]+)\s*\-\s*([^\s]+)\s*$/i
     
     def initialize(email)
@@ -60,7 +60,7 @@ class Participant < DelegateClass(::Portera::Participant)
       if OFFSET_MATCHER =~ raw.subject
         parse_offset $1
       else
-        parse_offset 'UTC'
+        parse_offset '+00:00'
       end
     end
     

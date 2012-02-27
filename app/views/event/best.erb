@@ -1,0 +1,8 @@
+For <%= event.range %> (<%= event.duration %>)
+------------------------------
+<% event.minimum_participants(2).each do |slot, participants| -%>
+<%= slot %>
+  <% participants.each do |partic| -%>
+  <%= partic %>
+  <% end -%>
+<% end -%>    

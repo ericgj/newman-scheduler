@@ -64,7 +64,7 @@ module Presenters
     end
     
     def present_time_range(r)
-      "#{present_time(r.begin)} - #{present_time(r.end)}"
+      "#{present_date(r.begin)}  #{present_time(r.begin)} - #{present_time(r.end)}"
     end
     
     def present_date(d)

@@ -94,7 +94,7 @@ App = Newman::Application.new do
     availability_list(avail.range).update(avail.email) { avail }
     respond(
       :subject => "[availability] #{avail.name} " + 
-                  "#{avail.range.begin}...#{avail.range.end}"
+                  "#{avail.range.begin}...#{avail.range.end} #{avail.availables.first.utc_offset}"
     )
   end
 
@@ -124,7 +124,7 @@ App = Newman::Application.new do
         :bcc      => subscribers.join(', '),
         :reply_to => settings.application.availability_email,
         :subject  => "[#{event.name}] Requesting your availability",
-        :body     => template('event/show', :event => event)
+        :body     => template('event/proposal', :event => event)
     )
   end
   
@@ -149,10 +149,10 @@ App = Newman::Application.new do
     
     event = Presenters::SimpleEvent.new(existing_event)
     
-    if event.participants <= 1
+    if event.participants.count <= 1
       respond(
         :subject => "[#{event.name}] Unable to select best times to meet",
-        :body    => template('schedule/error_no_participants', :event => event),
+        :body    => template('event/error_no_participants', :event => event),
         :to      => sender
       )
       next
@@ -160,7 +160,7 @@ App = Newman::Application.new do
     
     respond(
       :subject => "[#{event.name}] Best times to meet",
-      :body    => template('schedule/best', :event => event),
+      :body    => template('event/best', :event => event),
       :bcc => subscribers.join(', ')
     )
     
@@ -185,7 +185,7 @@ App = Newman::Application.new do
     unless partic
       respond(
         :subject => "[#{event.name}] availability unknown for: #{email}",
-        :body    => template('schedule/error-no-availability'),
+        :body    => template('event/error_no_availability'),
         :to      => sender
       )      
       next
@@ -197,7 +197,7 @@ App = Newman::Application.new do
     
     respond(
       :subject => "[#{event.name}] available times for: #{email}",
-      :body    => template('schedule/show', :event => event),
+      :body    => template('event/show', :event => event),
       :to      => sender
     )
 
