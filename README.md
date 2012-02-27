@@ -9,7 +9,7 @@ Note this is **untested code**.  Parts of it do not work yet!
 
     From: Flynn <flynnflys@example.com>
     To: c+availability@test.com
-    Subject: 2012-03-05 -04:00
+    Subject: 12-Mar-2012 -04:00
 
     Mon Tue Wed
     1pm - 3pm
@@ -26,7 +26,7 @@ Note this is **untested code**.  Parts of it do not work yet!
     
 Subscribers to the list get an alert to send in their availability.
 
-    From: snoopymcbeagle@example.com
+    From: On behalf of snoopymcbeagle@example.com <c+picnic@test.com>
     Reply-To: c+availability@test.com
     Bcc: <all subscribers>
     Subject: [A picnic] Requesting your availability

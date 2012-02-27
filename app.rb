@@ -49,6 +49,35 @@ App = Newman::Application.new do
       }
     end
     
+    def subscriber_availability_for_week(range)
+      avails = availability_list(range).map(&:contents)
+      avails.select {|person| 
+        subscribers.include?(person.email)
+      }
+    end
+    
+    def availability_for_week(range, email)
+      rec = availability_list(range).read(email)
+      rec.contents if rec
+    end
+    
+    # ----- accessors for use in views and to simplify controller code
+    
+    def subscribers
+      @subscribers ||= mailing_list(params[:list_id]).subscribers
+    end
+    
+    def new_event
+      @new_event ||= Event.from_email(
+                        request, default_event_params(params[:list_id]))
+    end
+    
+    def existing_event
+      return @existing_event if @existing_event
+      event_rec = event_list.read(params[:list_id])
+      @existing_event = event_rec.contents if event_rec
+    end
+    
   end
   
   match :list_id,  "[^\.]+"
@@ -81,24 +110,21 @@ App = Newman::Application.new do
   to(:tag, "{list_id}.schedule{update}") do
     list_id = params[:list_id]
     
-    event = Event.from_email(request, default_event_params(list_id))
-    event_list.update(list_id) { event }
-    
-    subscribers = mailing_list(list_id).subscribers
+    event_list.update(list_id) { new_event }
     
     if subscribers.empty?
       #TODO no subscribers or no such mailing list
       next
     end
     
-    event = Presenters::SimpleEvent.new(event)
+    event = Presenters::SimpleEvent.new(new_event)
     
     respond(
-        :from     => sender,
-        :bcc => subscribers.join(', '),
+        :from     => "On behalf of #{sender} <#{settings.service.default_sender}>",
+        :bcc      => subscribers.join(', '),
         :reply_to => settings.application.availability_email,
         :subject  => "[#{event.name}] Requesting your availability",
-        :body     => template('event/show', :event => event, :subscribers => subscribers)
+        :body     => template('event/show', :event => event)
     )
   end
   
@@ -106,11 +132,8 @@ App = Newman::Application.new do
   # list/event?
   # Responds to entire list with the best timeslots
   to(:tag, "{list_id}.schedule{index}") do
-    list_id = params[:list_id]
     
-    event_rec = event_list.read(list_id)
-    subscribers = mailing_list(list_id).subscribers
-    unless event_rec
+    unless existing_event
       # TODO unknown event
       next
     end
@@ -119,21 +142,17 @@ App = Newman::Application.new do
       # TODO no subscribers
       next
     end
-    
-    event = event_rec.contents
-    avails = availability_list(event.week).map(&:contents)
-    subscriber_avails = avails.select {|person| 
-      subscribers.include?(person.email)
-    }
-    
-    subscriber_avails.each do |person|
-      event.participants << person
+        
+    subscriber_availability_for_week(existing_event.week).each do |partic|
+      existing_event.participants << partic
     end
+    
+    event = Presenters::SimpleEvent.new(existing_event)
     
     if event.participants <= 1
       respond(
         :subject => "[#{event.name}] Unable to select best times to meet",
-        :body    => template('schedule/error-no-participants'),
+        :body    => template('schedule/error_no_participants', :event => event),
         :to      => sender
       )
       next
@@ -141,7 +160,7 @@ App = Newman::Application.new do
     
     respond(
       :subject => "[#{event.name}] Best times to meet",
-      :body    => template('schedule/best'),
+      :body    => template('schedule/best', :event => event),
       :bcc => subscribers.join(', ')
     )
     
@@ -156,30 +175,29 @@ App = Newman::Application.new do
     email = request.subject.strip
     email = sender if email.empty?    # default to sender if no subject
     
-    event_rec = event_list.read(list_id)
-    unless event_rec
+    unless existing_event
       # TODO unknown event
       next
     end
     
-    event = event_rec.contents
-    avail_rec = availability_list(event.week).read(email)
+    partic = availability_for_week(existing_event.week, email) 
     
-    unless avail_rec
+    unless partic
       respond(
-        :subject => "[#{event.name}] available times unknown for: #{email}",
+        :subject => "[#{event.name}] availability unknown for: #{email}",
         :body    => template('schedule/error-no-availability'),
         :to      => sender
       )      
       next
     end    
     
-    avail = avail_rec.contents
-    event.participants << avail
+    existing_event.participants << partic
         
+    event = Presenters::SimpleEvent.new(existing_event)
+    
     respond(
       :subject => "[#{event.name}] available times for: #{email}",
-      :body    => template('schedule/show'),
+      :body    => template('schedule/show', :event => event),
       :to      => sender
     )
 
