@@ -1,3 +1,4 @@
 
-require File.expand_path('app/models/event', File.dirname(__FILE__))
-require File.expand_path('app/models/participant', File.dirname(__FILE__))
+Dir[File.expand_path('app/models/*.rb', File.dirname(__FILE__))].each do |f|
+  require f
+end

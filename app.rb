@@ -3,6 +3,7 @@ Bundler.require
 
 require File.expand_path('app_libraries', File.dirname(__FILE__))
 require File.expand_path('app_models', File.dirname(__FILE__))
+require File.expand_path('app_presenters', File.dirname(__FILE__))
 
 App = Newman::Application.new do
 
@@ -38,10 +39,10 @@ App = Newman::Application.new do
   end
   
   match :list_id,  "[^\.]+"
-  match :update,   "$"
-  match :show,     "\-show$"
-  match :index,    "\-list$"
-  match :delete,   "\-delete$"
+  match :update,   "\-(update|create)"
+  match :show,     "\-show"
+  match :index,    "\-list"
+  match :delete,   "\-delete"
   
   # Send in my availability for the specified week and timezone
   # Responds with a confirmation email; note if you have a mailing list app
@@ -77,11 +78,13 @@ App = Newman::Application.new do
       next
     end
     
+    event = Presenters::SimpleEvent.new(event)
+    
     forward_message(
         :subject  => "[#{event.name}] Requesting your availability",
-        :body     => template('event/show'),
-        :bcc => subscribers.join(', '),
-        :reply_to => settings.application.availability_email
+        #:body     => template('event/show'),
+        :bcc => subscribers.join(', ')#,
+        #:reply_to => settings.application.availability_email
     )
   end
   

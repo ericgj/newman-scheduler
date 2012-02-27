@@ -69,8 +69,13 @@ class Event < DelegateClass(::Portera::Event)
     end
     
     def raw_lines
-      raw.text_part.decoded.split("\n")
+      if raw.body.multipart?
+        raw.text_part
+      else
+        raw
+      end.decoded.split("\n")
     end
+
     
   end
   
