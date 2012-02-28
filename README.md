@@ -1,8 +1,6 @@
 # Newman-Scheduler
 ## a scheduling app for Newman
 
-Note this is **untested code**.  Parts of it do not work yet!
-
 ### Example interactions
 
 #### 1. Send in your weekly availability.
@@ -93,6 +91,5 @@ Only the requester gets the response:
 
 ### Remaining work
 
-  - test interactions <del>3 &</del> 4 above
   - test with mail_whale downstream from it
   
