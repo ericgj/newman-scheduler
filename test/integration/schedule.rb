@@ -84,16 +84,23 @@ module IntegrationTests
         :expected_response_matchers => [/week of Mon 12 Mar/i, /1hr 30min/i]
       },
 
-      :schedule_show => {
+      :jayne_show => {
         :email   => 'snoopymcbeagle@example.com',
         :from    => 'Sal <snoopymcbeagle@example.com>',
         :to      => 'test+picnic.schedule-show@test.com',
-        :subject => 'inaras@example.com',
+        :subject => 'jcobb@example.com',
         :body    => '',
         :list_id => 'picnic',
         :expected_response_from => "test@test.com",
-        :expected_response_subject => "[A picnic] Available times for: inaras@example.com",
-        :expected_response_matchers => []
+        :expected_response_subject => 
+          "[A picnic] Available times for: Jayne Cobb <jcobb@example.com>",
+        :expected_response_matchers => [
+            /Mon 12 Mar\s+3:00pm\s*UTC\s*-\s*6:00pm\s*UTC/i,
+            /Tue 13 Mar\s+3:00pm\s*UTC\s*-\s*6:00pm\s*UTC/i,
+            /Wed 14 Mar\s+3:00pm\s*UTC\s*-\s*6:00pm\s*UTC/i,
+            /Thu 15 Mar\s+3:00pm\s*UTC\s*-\s*6:00pm\s*UTC/i,
+            /Fri 16 Mar\s+3:00pm\s*UTC\s*-\s*6:00pm\s*UTC/i
+        ]
       },
       
       :schedule_list => {
@@ -144,6 +151,9 @@ module IntegrationTests
         :body    => ['Monday Tue Thu',
                      ' 7:00 -   10:00',''].join("\r\n")           
       },
+      
+      # Note: for some reason the schedule-show for this one isn't working
+      # probably a timezone-related problem in Portera
       
       :inara_availability => {
         :email  => 'inaras@example.com',
@@ -279,13 +289,21 @@ module IntegrationTests
                                  :zoe_availability,
                                  :inara_availability
 
-        msgs = process_fixture_messages :schedule_show
+        msgs = process_fixture_messages :jayne_show
         
-        request_fixture = Fixtures[:schedule_show]
+        request_fixture = Fixtures[:jayne_show]
         response = msgs.last
         body = response.decoded
 
-        assert_equal [ request_fixture[:email] ], response.to
+        assert_equal [ request_fixture[:email] ],  
+                     response.to
+                     
+        assert_equal request_fixture[:expected_response_subject], 
+                     response.subject
+                     
+        request_fixture[:expected_response_matchers].each do |matcher|
+          assert_match matcher, body
+        end
         
       end
       

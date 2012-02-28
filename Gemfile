@@ -1,5 +1,5 @@
 source :rubygems
 
-gem "newman", :git => "git://github.com/mendicant-university/newman.git"
+gem "newman", :git => "https://github.com/mendicant-university/newman.git"
 
-gem "portera", "~>0.1"
+gem "portera", :git => "https://github.com/ericgj/portera.git" 

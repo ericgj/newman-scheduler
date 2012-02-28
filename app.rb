@@ -5,18 +5,6 @@ require File.expand_path('app_libraries', File.dirname(__FILE__))
 require File.expand_path('app_models', File.dirname(__FILE__))
 require File.expand_path('app_presenters', File.dirname(__FILE__))
 
-#=================== patch
-module Newman
-  class Controller
-  
-    def template(name,locals={})
-      Tilt.new(Dir.glob("#{settings.service.templates_dir}/#{name}.*").first)
-          .render(self,locals)
-    end
-    
-  end
-end
-#==================
     
 App = Newman::Application.new do
 
@@ -194,13 +182,9 @@ App = Newman::Application.new do
     existing_event.participants << partic
     
     event = Presenters::SimpleEvent.new(existing_event)
-    
-    logger.debug "******* #{partic.email} *******\n" + 
-                 existing_event.participants.first.availables.inspect + "\n" +
-                 existing_event.coalesced.inspect
-                 
+                     
     respond(
-      :subject => "[#{event.name}] Available times for: #{email}",
+      :subject => "[#{event.name}] Available times for: #{event.participants.first}",
       :body    => template('event/show', :event => event),
       :to      => sender
     )
