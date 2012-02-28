@@ -3,17 +3,7 @@
 
 ### Example interactions
 
-#### 1. Send in your weekly availability.
-
-    From: Flynn <flynnflys@example.com>
-    To: c+availability@test.com
-    Subject: 12-Mar-2012 -04:00
-
-    Mon Tue Wed
-    1pm - 3pm
-    
-    
-#### 2. Send an event proposal to the mailing list.
+#### 1. Send an event proposal to the mailing list.
 
     From: Sal <snoopymcbeagle@example.com>
     To: c+picnic.schedule-create@test.com
@@ -35,7 +25,17 @@ Subscribers to the list get an alert to send in their availability.
 
     Note there are 3 current subscribers to this list.
     
+
+#### 2. Send in your weekly availability.
+
+    From: Flynn <flynnflys@example.com>
+    To: c+availability@test.com
+    Subject: 12-Mar-2012 -04:00
+
+    Mon Tue Wed
+    1pm - 3pm
     
+        
 #### 3. Request a list of the current best available times for the event.
 
     From: Flynn <flynnflys@example.com>
