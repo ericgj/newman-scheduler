@@ -14,16 +14,16 @@ module IntegrationTests
 
     TEST_DIR = File.dirname(__FILE__)
     
+    def new_test_server(apps)
+      apps = Array(apps)  
+      server = Newman::Server.test_mode(environment_file)
+      apps.each {|app| server.apps << app }    
+      server.logger = logger
+      server
+    end
+    
     def environment_file
       File.expand_path('config/settings.rb', TEST_DIR)
-    end
-    
-    def settings
-      settings = Newman::Settings.from_file(environment_file)  
-    end
-    
-    def store(key=:database)
-       Newman::Store.new(settings.application.__send__(key))
     end
     
     def logger
@@ -34,14 +34,6 @@ module IntegrationTests
       log
     end
     
-    def server(apps)
-      apps = Array(apps)
-      server = Newman::Server.test_mode(environment_file)
-      apps.each {|app| server.apps << app}
-      server.logger = logger
-      server
-    end
-      
     def reset_storage(*keys)
       keys = [:database, :events_db, :availability_db] if keys.empty?
       keys.each do |key|
@@ -60,6 +52,14 @@ module IntegrationTests
 
     def event_list
       Newman::KeyRecorder.new('event', store(:events_db))
+    end
+    
+    def settings
+      settings = Newman::Settings.from_file(environment_file)  
+    end
+    
+    def store(key=:database)
+       Newman::Store.new(settings.application.__send__(key))
     end
     
   end  

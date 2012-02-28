@@ -104,7 +104,7 @@ class Participant < DelegateClass(::Portera::Participant)
     end
 
     def parse_available_days(text)
-      days = text.split(/\s+/).map(&:to_sym)
+      days = text.split(/\s+/).delete_if {|t| t.empty?}.map(&:to_sym)
       block_given? ? yield(days) : days
     end
     

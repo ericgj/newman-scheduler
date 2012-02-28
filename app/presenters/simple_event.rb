@@ -20,13 +20,16 @@ module Presenters
     def duration
       present_duration(super)
     end
-    
-    def best
-      coalesced.best
+        
+    def each_timeslot
+      availability.each do |timeslot|
+        yield present_time_range(timeslot.range),
+              timeslot.participants.map {|p| present_participant(p)}      
+      end
     end
     
     def each
-      best.each do |timeslot|
+      coalesced.best.each do |timeslot|
         yield present_time_range(timeslot.range),
               timeslot.participants.map {|p| present_participant(p)}
       end

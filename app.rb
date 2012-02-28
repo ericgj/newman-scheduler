@@ -192,11 +192,15 @@ App = Newman::Application.new do
     end    
     
     existing_event.participants << partic
-        
+    
     event = Presenters::SimpleEvent.new(existing_event)
     
+    logger.debug "******* #{partic.email} *******\n" + 
+                 existing_event.participants.first.availables.inspect + "\n" +
+                 existing_event.coalesced.inspect
+                 
     respond(
-      :subject => "[#{event.name}] available times for: #{email}",
+      :subject => "[#{event.name}] Available times for: #{email}",
       :body    => template('event/show', :event => event),
       :to      => sender
     )

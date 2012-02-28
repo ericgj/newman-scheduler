@@ -11,6 +11,24 @@ module IntegrationTests
     module Helpers
       include IntegrationTests::Helpers
       
+      def server
+        @server ||= new_test_server(
+                      [Newman::RequestLogger, App, Newman::ResponseLogger]
+                    )
+      end
+      
+      def reset_inbox
+        server.mailer.messages; nil
+      end
+      
+      def process_fixture_messages(*fixs)
+        fixs.each do |fix|
+          server.mailer.deliver_message fixture_message(fix)
+        end
+        server.tick
+        server.mailer.messages
+      end
+      
       def populate_mailing_list(list_id, *emails)
         emails.each do |email|
           mailing_list(list_id).subscribe email
@@ -65,6 +83,18 @@ module IntegrationTests
         :expected_response_subject => "[A picnic] Requesting your availability",
         :expected_response_matchers => [/week of Mon 12 Mar/i, /1hr 30min/i]
       },
+
+      :schedule_show => {
+        :email   => 'snoopymcbeagle@example.com',
+        :from    => 'Sal <snoopymcbeagle@example.com>',
+        :to      => 'test+picnic.schedule-show@test.com',
+        :subject => 'inaras@example.com',
+        :body    => '',
+        :list_id => 'picnic',
+        :expected_response_from => "test@test.com",
+        :expected_response_subject => "[A picnic] Available times for: inaras@example.com",
+        :expected_response_matchers => []
+      },
       
       :schedule_list => {
         :email   => 'malcolm@example.com',
@@ -112,7 +142,7 @@ module IntegrationTests
         :to     => 'test+availability@test.com',
         :subject => ' Mar-12  -08:00 ',
         :body    => ['Monday Tue Thu',
-                     ' 7:00 -   10:00'].join("\r\n")           
+                     ' 7:00 -   10:00',''].join("\r\n")           
       },
       
       :inara_availability => {
@@ -133,21 +163,19 @@ module IntegrationTests
     
       before do
         reset_storage
-        @server = server([Newman::RequestLogger, App, Newman::ResponseLogger])
-        @subscribers = ['dummy1@example.com', 
-                        'dummy2@example.com', 
-                        'dummy3@example.com']
-        @server.mailer.messages  # reset inbox
+        reset_inbox
       end
       
       [:schedule_update, :schedule_create].each do |fix|
       
         it 'should create or update event' do
           fixture = Fixtures[fix]
-          populate_mailing_list fixture[:list_id], *@subscribers
+          subscribers = ['dummy1@example.com',
+                         'dummy2@example.com',
+                         'dummy3@example.com']
+          populate_mailing_list fixture[:list_id], *subscribers
           
-          @server.mailer.deliver_message fixture_message(:schedule_update)
-          @server.tick
+          process_fixture_messages fix
           
           event = event_list.read(fixture[:list_id]).contents
           
@@ -160,28 +188,32 @@ module IntegrationTests
         
         it 'if any subscribers, should forward "requesting availability" email' do
           fixture = Fixtures[fix]
-          populate_mailing_list fixture[:list_id], *@subscribers
+          subscribers = ['dummy1@example.com',
+                         'dummy2@example.com',
+                         'dummy3@example.com']
+          populate_mailing_list fixture[:list_id], subscribers
             
+          msgs = process_fixture_messages fix
 
-          @server.mailer.deliver_message fixture_message(:schedule_update)
-          @server.tick
-          
-          msgs = @server.mailer.messages
           response = msgs.first
+          body     = response.decoded
           
           assert_equal 1, msgs.count
           assert_equal fixture[:expected_response_subject],
                        response.subject,
-                       response.to_s
+                       response
                        
-          fixture[:expected_response_matchers].each do |matcher|
-            assert_match matcher, response.decoded
-          end
-          
-          assert_equal @subscribers, response.bcc
-          assert_equal fixture[:expected_response_from], response.from
+          assert_equal subscribers, 
+                       response.bcc
+          assert_equal fixture[:expected_response_from], 
+                       response.from
           assert_equal [settings.application.availability_email], 
                        response.reply_to
+                       
+          fixture[:expected_response_matchers].each do |matcher|
+            assert_match matcher, body
+          end
+          
         end
         
       end
@@ -194,8 +226,7 @@ module IntegrationTests
     
       before do
         reset_storage
-        @server = server([Newman::RequestLogger, App, Newman::ResponseLogger])
-        @server.mailer.messages  # reset inbox
+        reset_inbox
       end
       
       it 'it should return a schedule of best times, bcc to subscribers' do
@@ -209,18 +240,12 @@ module IntegrationTests
         
         populate_mailing_list_from_fixtures :schedule_create, *subscriber_fixtures
                                                     
-        availability_fixtures.each do |fix|
-          @server.mailer.deliver_message fixture_message(fix)
-        end
-        @server.tick; @server.mailer.messages
+        process_fixture_messages *availability_fixtures
         
-        @server.mailer.deliver_message fixture_message(:schedule_create)
-        @server.tick; @server.mailer.messages
-        
-        @server.mailer.deliver_message fixture_message(:schedule_list)
-        @server.tick
-        
-        msgs = @server.mailer.messages        
+        process_fixture_messages :schedule_create
+
+        msgs = process_fixture_messages :schedule_list 
+
         response = msgs.last
         actual = response.decoded
         
@@ -233,6 +258,37 @@ module IntegrationTests
         
       end
 
+    end
+    
+    
+    describe 'participant availability' do
+      include Helpers    
+    
+      before do
+        reset_storage
+        reset_inbox
+      end    
+    
+      it 'should return a list of available times back to sender' do
+
+        process_fixture_messages :schedule_create
+        
+        process_fixture_messages :malcolm_availability,
+                                 :hoban_availability,
+                                 :jayne_availability,
+                                 :zoe_availability,
+                                 :inara_availability
+
+        msgs = process_fixture_messages :schedule_show
+        
+        request_fixture = Fixtures[:schedule_show]
+        response = msgs.last
+        body = response.decoded
+
+        assert_equal [ request_fixture[:email] ], response.to
+        
+      end
+      
     end
     
   end
