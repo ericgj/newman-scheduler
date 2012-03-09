@@ -9,6 +9,8 @@ require File.expand_path('app_presenters', File.dirname(__FILE__))
 App = Newman::Application.new do
 
   helpers do
+
+    # ----- Store helpers
     
     def store(key=:database)
       Newman::Store.new(settings.application.__send__(key))
@@ -19,176 +21,109 @@ App = Newman::Application.new do
       Newman::MailingList.new(id, store)
     end
     
-    # list keyed by date-range; elements keyed by email
-    def availability_list(id)
-      Newman::KeyRecorder.new(id, store(:availability_db))
-    end
-    
-    # elements keyed by list_id
+    # elements keyed by autoincrementing ID
     def event_list
-      Newman::KeyRecorder.new('event', store(:events_db))
+      Newman::Recorder.new('event', store(:events_db))
     end
     
-    def default_event_params(list_id)
+    def subscribers
+      mailing_list(params[:list_id]).subscribers
+    end
+    
+    def subscriber?(addr)
+      mailing_list(params[:list_id]).subscriber?(addr)
+    end
+    
+    def create_event(e)
+      event_list.create(params[:list_id]) { e }
+    end
+    
+    
+    # ----- Misc helpers
+    
+    # Note: default range of current date to 1 week from today
+    def default_event_params
       { 
-        :name     => list_id, 
         :duration => 60,
-        :range    => request.date...(request.date+1)
+        :range    => request.date...(request.date+7)
       }
     end
     
-    def subscriber_availability_for_week(range)
-      avails = availability_list(range).map(&:contents)
-      avails.select {|person| 
-        subscribers.include?(person.email)
-      }
+    def availability_address(list_id, event_id)
+      "#{list_id}.event-avail-#{event_id}@#{domain}"
+    end
+
+    def schedule_address(list_id, event_id)
+      "#{list_id}.event-sched-#{event_id}@#{domain}"
+    end
+
+    def usage_address(list_id)
+      "#{list_id}.event-usage@#{domain}"
     end
     
-    def availability_for_week(range, email)
-      rec = availability_list(range).read(email)
-      rec.contents if rec
+    def add_response_footer(text, divider="-----")
+      lines = response.text_part.to_s.split("\r\n")
+      lines << "" << divider << text
+      response.text_part = lines.join("\r\n")
+    end
+    
+    def usage_response
+      respond(
+        :from    => "#{settings.service.default_sender}",
+        :subject => "[#{params[:list_id]}] Scheduler usage",
+        :body    => template('events/usage', :list_id => params[:list_id])
+      )
     end
     
     # ----- accessors for use in views and to simplify controller code
     
-    def subscribers
-      @subscribers ||= mailing_list(params[:list_id]).subscribers
-    end
-    
     def new_event
-      @new_event ||= Event.from_email(
-                        request, default_event_params(params[:list_id]))
+      @new_event ||= Event.from_email(request, 
+                                      default_event_params)
     end
     
-    def existing_event
-      return @existing_event if @existing_event
-      event_rec = event_list.read(params[:list_id])
-      @existing_event = event_rec.contents if event_rec
-    end
-    
-  end
-  
-  match :list_id,  "[^\.]+"
-  match :update,   "\-(update|create)"
-  match :show,     "\-show"
-  match :index,    "\-list"
-  match :delete,   "\-delete"
-  
-  # Send in my availability for the specified week and timezone
-  # Responds with a confirmation email; note if you have a mailing list app
-  # downstream of this, instead the request will be forwarded to the list.
-  to(:tag, "availability") do
-    avail = Participant.from_email(request)
-    availability_list(avail.range).update(avail.email) { avail }
-    respond(
-      :subject => "[availability] #{avail.name} " + 
-                  "#{avail.range.begin}...#{avail.range.end} #{avail.availables.first.utc_offset}"
-    )
   end
 
+
+  match :list_id,      "[^\.]+"
+  match :new,          "new"
+  match :availability, "avail"
+  match :schedule,     "sched"
+  match :usage,        "usage"
+  match :event_id,     "\d+"
   
-  # Specify the date or date-range of an event and its duration
-  # Responds to entire list with email requesting availability
-  # With the availability email as the reply-to address
-  #
-  # Note that if duration and range and name not specified in request email,
-  # defaults to hour-long event happening on date the email was sent,
-  # named the same as the list_id
-  #
-  to(:tag, "{list_id}.schedule{update}") do
-    list_id = params[:list_id]
+  EVENT_NEW   = "{list_id}.event-{new}"
+  EVENT_AVAIL = "{list_id}.event-{availability}-{event_id}"
+  EVENT_SCHED = "{list_id}.event-{schedule}-{event_id}"
+  EVENT_USAGE = "{list_id}.event-{usage}"
+  
+  
+  to(:tag, EVENT_NEW) do
     
-    event_list.update(list_id) { new_event }
-    
-    if subscribers.empty?
-      #TODO no subscribers or no such mailing list
+    unless subscriber?(sender)
+      #TODO sender is not a subscriber
       next
     end
     
-    event = Presenters::SimpleEvent.new(new_event)
+    rec = create_event(new_event)    
+    event_id = rec.id
     
-    respond(
+    forward_message(
         :from     => "On behalf of #{sender} <#{settings.service.default_sender}>",
         :bcc      => subscribers.join(', '),
-        :reply_to => settings.application.availability_email,
-        :subject  => "[#{event.name}] Requesting your availability",
-        :body     => template('event/proposal', :event => event)
+        :reply_to => availability_address(params[:list_id], event_id)
     )
-  end
-  
-  # What are the current best times to meet for all subscribers to the given 
-  # list/event?
-  # Responds to entire list with the best timeslots
-  to(:tag, "{list_id}.schedule{index}") do
     
-    unless existing_event
-      # TODO unknown event
-      next
-    end
-    
-    if subscribers.empty?
-      # TODO no subscribers
-      next
-    end
-        
-    subscriber_availability_for_week(existing_event.week).each do |partic|
-      existing_event.participants << partic
-    end
-    
-    event = Presenters::SimpleEvent.new(existing_event)
-    
-    if event.participants.count <= 1
-      respond(
-        :subject => "[#{event.name}] Unable to select best times to meet",
-        :body    => template('event/error_no_participants', :event => event),
-        :to      => sender
-      )
-      next
-    end
-    
-    respond(
-      :subject => "[#{event.name}] Best times to meet",
-      :body    => template('event/best', :event => event),
-      :bcc => subscribers.join(', ')
-    )
+    add_response_footer template('event/footer', 
+                                   :list_id  => params[:list_id],
+                                   :event_id => event_id
+                                )
     
   end
   
-  # What are the current available timeslots for specified email address 
-  # (or myself if no email address specified) for given list/event?
-  # Responds to sender with all available timeslots for specified email address.
-  to(:tag, "{list_id}.schedule{show}") do
-    list_id = params[:list_id]
-    
-    email = request.subject.strip
-    email = sender if email.empty?    # default to sender if no subject
-    
-    unless existing_event
-      # TODO unknown event
-      next
-    end
-    
-    partic = availability_for_week(existing_event.week, email) 
-    
-    unless partic
-      respond(
-        :subject => "[#{event.name}] availability unknown for: #{email}",
-        :body    => template('event/error_no_availability'),
-        :to      => sender
-      )      
-      next
-    end    
-    
-    existing_event.participants << partic
-    
-    event = Presenters::SimpleEvent.new(existing_event)
-                     
-    respond(
-      :subject => "[#{event.name}] Available times for: #{event.participants.first}",
-      :body    => template('event/show', :event => event),
-      :to      => sender
-    )
-
-  end
+ 
+  to :tag, EVENT_USAGE, &method(:usage_response)
+  
+  default &method(:usage_response)
   
 end
