@@ -9,10 +9,10 @@ GIT
 
 GIT
   remote: https://github.com/mendicant-university/newman.git
-  revision: 9ce82bf095508933ac35d728e6c91690176285af
+  revision: 97c3747bdf126796202ce4133ecd021d9d5bddba
   specs:
-    newman (0.3.0)
-      mail (~> 2.3.0)
+    newman (0.4.0)
+      mail (= 2.3.0)
       tilt (~> 1.3.3)
 
 GEM

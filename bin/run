@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require File.expand_path('app', File.dirname(__FILE__))
+
+Newman::Server.simple(App, 'config/environment.rb')
+
