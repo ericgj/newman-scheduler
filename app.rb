@@ -22,8 +22,8 @@ App = Newman::Application.new do
     end
     
     # elements keyed by autoincrementing ID
-    def event_list
-      Newman::Recorder.new('event', store(:events_db))
+    def event_list(list_id)
+      Newman::Recorder.new(list_id, store(:events_db))
     end
     
     def subscribers
@@ -35,36 +35,35 @@ App = Newman::Application.new do
     end
     
     def create_event(e)
-      event_list.create(params[:list_id]) { e }
+      event_list(params[:list_id]).create(e)
     end
     
     
     # ----- Misc helpers
     
-    # Note: default range of current date to 1 week from today
-    def default_event_params
-      { 
-        :duration => 60,
-        :range    => request.date...(request.date+7)
-      }
+    
+    def default_sender_username
+      settings.service.default_sender.split('@').first
     end
     
     def availability_address(list_id, event_id)
-      "#{list_id}.event-avail-#{event_id}@#{domain}"
+      "#{default_sender_username}+#{list_id}.event-avail-#{event_id}@#{domain}"
     end
 
     def schedule_address(list_id, event_id)
-      "#{list_id}.event-sched-#{event_id}@#{domain}"
+      "#{default_sender_username}+#{list_id}.event-sched-#{event_id}@#{domain}"
     end
 
     def usage_address(list_id)
-      "#{list_id}.event-usage@#{domain}"
+      "#{default_sender_username}+#{list_id}.event-usage@#{domain}"
     end
     
+    # note this forces plain-text response currently
     def add_response_footer(text, divider="-----")
-      lines = response.text_part.to_s.split("\r\n")
+      lines = response.decoded.split("\r\n")
       lines << "" << divider << text
-      response.text_part = lines.join("\r\n")
+      response.body = nil
+      response.body = lines.join("\r\n")
     end
     
     def usage_response
@@ -78,8 +77,7 @@ App = Newman::Application.new do
     # ----- accessors for use in views and to simplify controller code
     
     def new_event
-      @new_event ||= Event.from_email(request, 
-                                      default_event_params)
+      @new_event ||= Event.from_email(request)
     end
     
   end
@@ -100,30 +98,40 @@ App = Newman::Application.new do
   
   to(:tag, EVENT_NEW) do
     
+    logger.debug("NEWMAN-SCHEDULER: EVENT-NEW") { {:to => request.to}.inspect }
+    
     unless subscriber?(sender)
       #TODO sender is not a subscriber
       next
     end
     
-    rec = create_event(new_event)    
+    unless new_event.name && new_event.range && new_event.duration
+      #TODO invalid syntax, respond with usage
+      next
+    end
+    
+    rec = create_event(new_event)
     event_id = rec.id
     
     forward_message(
         :from     => "On behalf of #{sender} <#{settings.service.default_sender}>",
+        :to       => nil,
         :bcc      => subscribers.join(', '),
         :reply_to => availability_address(params[:list_id], event_id)
     )
     
-    add_response_footer template('event/footer', 
+    add_response_footer template('event/_footer', 
                                    :list_id  => params[:list_id],
                                    :event_id => event_id
                                 )
     
   end
-  
  
+  
+end
+
+__END__
+
   to :tag, EVENT_USAGE, &method(:usage_response)
   
   default &method(:usage_response)
-  
-end

@@ -1,12 +1,8 @@
-require "bundler"
-Bundler.require
+require File.expand_path('../app', File.dirname(__FILE__))
 
-require File.expand_path('../app_libraries', File.dirname(__FILE__))
-require File.expand_path('../app_models', File.dirname(__FILE__))
-require File.expand_path('../app_presenters', File.dirname(__FILE__))
-
-require 'minitest/spec'
-MiniTest::Unit.autorun
+gem "minitest"
+require 'minitest/autorun'
+require "purdytest"
 
 module IntegrationTests
 
@@ -35,7 +31,7 @@ module IntegrationTests
     end
     
     def reset_storage(*keys)
-      keys = [:database, :events_db, :availability_db] if keys.empty?
+      keys = [:database, :events_db] if keys.empty?
       keys.each do |key|
         file = settings.application.__send__(key)
         File.delete(file) if File.exist?(file)
@@ -46,12 +42,8 @@ module IntegrationTests
       Newman::MailingList.new(id, store)
     end
     
-    def availability_list(id)
-      Newman::KeyRecorder.new(id, store(:availability_db))
-    end
-
-    def event_list
-      Newman::KeyRecorder.new('event', store(:events_db))
+    def event_list(list_id)
+      Newman::Recorder.new(list_id, store(:events_db))
     end
     
     def settings

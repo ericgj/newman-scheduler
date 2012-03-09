@@ -26,33 +26,43 @@ class Event < DelegateClass(::Portera::Event)
   
     attr_accessor :name, :duration, :range
     
+    FIELD_SEP        = "|"
+    NAME_MATCHER     = /^\s*(Availability\s+for){0,1}\s*\b(.+)\b\s*$/i
     DURATION_MATCHER = /^\s*(\d+)/
-    RANGE_MATCHER    = /^\s*(week\s+of|on)\s+(.+)\s*$/i
+    RANGE_MATCHER    = /^\s*(week\s+of|on)\s+\b(.+)\b\s*$/i
     
     def initialize(email)
       self.raw = email
       parse_subject
-      parse_body
     end
     
     private
     attr_accessor :raw
     
     def parse_subject
-      self.name = raw.subject.strip unless raw.subject.empty?
+      parts = raw.subject.strip.split(FIELD_SEP)
+      self.name     = parse_name(parts[0])
+      self.range    = parse_range_expr(parts[1])
+      self.duration = parse_duration_expr(parts[2])
     end
     
-    def parse_body
-      raw_lines.each do |line|
-        break if self.duration && self.range
-        if self.duration.nil? && DURATION_MATCHER =~ line
-          self.duration = parse_duration($1)
-        elsif self.range.nil? && RANGE_MATCHER =~ line
-          self.range    = parse_range($2, $1.downcase)
-        end
+    def parse_name(expr)
+      return nil unless expr
+      expr[NAME_MATCHER, 2]
+    end
+    
+    def parse_range_expr(expr)
+      return nil unless expr
+      if RANGE_MATCHER =~ expr
+        parse_range($2, $1.downcase)
       end
     end
     
+    def parse_duration_expr(expr)
+      return nil unless expr
+      parse_duration expr[DURATION_MATCHER, 1]
+    end
+        
     def parse_duration(dur)
       self.duration = dur.to_i
     end
@@ -67,15 +77,6 @@ class Event < DelegateClass(::Portera::Event)
         dt.to_date...(dt.to_date+7)
       end
     end
-    
-    def raw_lines
-      if raw.body.multipart?
-        raw.text_part
-      else
-        raw
-      end.decoded.split("\n")
-    end
-
     
   end
   
