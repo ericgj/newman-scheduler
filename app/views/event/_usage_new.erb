@@ -1,0 +1,62 @@
+---
+## HOW TO PROPOSE AN EVENT TO THE LIST <%= list_id %>
+
+Event proposals should be sent to **<%= new_event_address(list_id) %>** .
+
+The *body* of the email is completely free-text: use it to describe the event to 
+list members and to ask them to send in their availability for it.
+
+The *subject line* must follow the following syntax rules:
+**(Note these rules may change, so stay tuned!)**
+
+1. The subject has three parts: the *name* of the event, the *range* of proposed 
+dates, and the proposed *duration*.
+
+
+2. These parts are divided by the pipe "|" character. Any spaces before or after
+the | are stripped off.
+
+
+3. The **name** of the event can be anything. But if it starts with the text 
+*availability for*, that will be stripped off. So
+
+    Availability for All Hands Meeting   => All Hands Meeting
+
+and
+
+    All Hands Meeting  => All Hands Meeting
+
+    
+4. The **date range** currently can be either a week or a single day. To specify
+a week, use the first day of the week like:
+
+    week of Mar 19
+    
+The format of the date can be anything that ruby can `Time.parse()`. If you don't
+specify the first day of the week (i.e. Monday), it will adjust the range to 
+start from the Monday of the week specified.
+
+To specify a single day, use `on`:
+
+    on 25-Mar-2012
+    
+Again, the format can be anything that ruby can parse.
+
+
+5. The **duration** currently is specified in minutes. Possibly later refinements
+will allow things like "1h 30m", but right now, the first number is interpreted
+as the duration in minutes. For your fellow list-members, you can add "mins" or 
+"minutes" to the end to be clear:
+
+    90 mins
+
+
+So putting it all together: here are some examples of valid subject lines for
+event proposals:
+
+    Availability for All Hands Meeting | week of Mar 19  | 120 min
+    
+    Picnic | on 25-Mar-2012 | 60
+    
+    AVAILABILITY FOR social gathering | week of 2012-03-20  | 90minutes
+    

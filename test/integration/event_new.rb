@@ -80,7 +80,41 @@ module IntegrationTests
         :expected_reply_to          => "test+list.event-avail-1@test.com",
         :expected_response_subject  => "A picnic | week of Mar 12 | 90",
         :expected_response_matchers => []
-      }      
+      },
+      :no_range_or_duration => {
+        :email   => 'snoopymcbeagle@example.com',
+        :from    => 'Sal <snoopymcbeagle@example.com>',
+        :to      => 'test+list.event-new@test.com',
+        :subject => 'A picnic',
+        :body    => ['Can we have a picnic this week?',''].join("\r\n"),
+        :list_id => 'list',
+        :expected_name     => 'A picnic',
+        :expected_duration => nil,
+        :expected_range    => nil,
+        :expected_response_from     => "Scheduler usage <test@test.com>",
+        :expected_reply_to          => [],
+        :expected_response_subject  => "RE: A picnic -- invalid syntax",
+        :expected_response_matchers => [%r{Sorry, your message "A picnic"},
+                                        %r{## HOW TO PROPOSE AN EVENT TO THE LIST list}
+                                       ]
+      },
+      :no_duration => {
+        :email   => 'snoopymcbeagle@example.com',
+        :from    => 'Sal <snoopymcbeagle@example.com>',
+        :to      => 'test+list.event-new@test.com',
+        :subject => 'A picnic | week of Mar 12',
+        :body    => ['Can we have a picnic this week?',''].join("\r\n"),
+        :list_id => 'list',
+        :expected_name     => 'A picnic',
+        :expected_duration => nil,
+        :expected_range    => Date.civil(2012,3,12)...Date.civil(2012,3,19),
+        :expected_response_from     => "Scheduler usage <test@test.com>",
+        :expected_reply_to          => [],
+        :expected_response_subject  => "RE: A picnic | week of Mar 12 -- invalid syntax",
+        :expected_response_matchers => [%r{Sorry, your message "A picnic | week of Mar 12"},
+                                        %r{## HOW TO PROPOSE AN EVENT TO THE LIST list}
+                                       ]
+      }
 
     }
     
@@ -140,9 +174,66 @@ module IntegrationTests
           assert_equal subscribers, 
                        response.bcc
           assert_equal fixture[:expected_response_from], 
-                       response.from
+                       response[:from].decoded
           assert_equal [fixture[:expected_reply_to]], 
                        response.reply_to
+                       
+          fixture[:expected_response_matchers].each do |matcher|
+            assert_match matcher, body
+          end
+          
+        end
+        
+      end
+      
+    end
+    
+    describe "event creation, bad syntax" do
+      include Helpers    
+    
+      before do
+        reset_storage
+        reset_inbox
+      end
+      
+      [:no_range_or_duration, :no_duration].each do |fix|
+          
+        it 'should not create event' do
+          fixture = Fixtures[fix]
+          subscribers = [fixture[:email],
+                         'dummy1@example.com',
+                         'dummy2@example.com',
+                         'dummy3@example.com']
+          populate_mailing_list fixture[:list_id], *subscribers
+          
+          process_fixture_messages fix
+          
+          assert_equal 0, event_list(fixture[:list_id]).count
+
+        end
+        
+        it 'should reply "invalid syntax" email' do
+          fixture = Fixtures[fix]
+          subscribers = [fixture[:email],
+                         'dummy1@example.com',
+                         'dummy2@example.com',
+                         'dummy3@example.com']
+          populate_mailing_list fixture[:list_id], *subscribers
+            
+          msgs = process_fixture_messages fix
+
+          response = msgs.first
+          body     = response.decoded
+          
+          assert_equal 1, msgs.count
+          assert_equal fixture[:expected_response_subject],
+                       response.subject,
+                       response
+                       
+          assert_equal fixture[:expected_response_from], 
+                       response[:from].decoded
+          assert_equal [fixture[:email]], 
+                       response.to
                        
           fixture[:expected_response_matchers].each do |matcher|
             assert_match matcher, body

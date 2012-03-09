@@ -46,6 +46,10 @@ App = Newman::Application.new do
       settings.service.default_sender.split('@').first
     end
     
+    def new_event_address(list_id)
+      "#{default_sender_username}+#{list_id}.event-new@#{domain}"
+    end
+
     def availability_address(list_id, event_id)
       "#{default_sender_username}+#{list_id}.event-avail-#{event_id}@#{domain}"
     end
@@ -68,8 +72,8 @@ App = Newman::Application.new do
     
     def usage_response
       respond(
-        :from    => "#{settings.service.default_sender}",
-        :subject => "[#{params[:list_id]}] Scheduler usage",
+        :from    => "Scheduler usage <#{settings.service.default_sender}>",
+        :subject => "#{params[:list_id]} -- scheduler instructions",
         :body    => template('events/usage', :list_id => params[:list_id])
       )
     end
@@ -106,7 +110,13 @@ App = Newman::Application.new do
     end
     
     unless new_event.name && new_event.range && new_event.duration
-      #TODO invalid syntax, respond with usage
+      respond(
+        :from    => "Scheduler usage <#{settings.service.default_sender}>",
+        :subject => "RE: #{request.subject} -- invalid syntax",
+        :body    => template('event/new_invalid',
+                               :list_id  => params[:list_id]
+                            )
+      )
       next
     end
     
