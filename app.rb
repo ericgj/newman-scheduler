@@ -66,6 +66,14 @@ App = Newman::Application.new do
     def usage_address(list_id)
       "Scheduler usage <#{default_sender_username}+#{list_id}.event-usage@#{domain}>"
     end
+
+    # note this forces plain-text response currently
+    def add_response_header(text, divider="-----")
+      lines = response.text_part.decoded.split("\r\n")
+      lines = [text, "", divider] + lines 
+      response.body = nil
+      response.body = lines.join("\r\n")
+    end
     
     # note this forces plain-text response currently
     def add_response_footer(text, divider="-----")
@@ -73,6 +81,10 @@ App = Newman::Application.new do
       lines << "" << divider << text
       response.body = nil
       response.body = lines.join("\r\n")
+    end
+    
+    def sender_name
+      request[:from].display_names.first
     end
     
     def reply_subject
@@ -104,6 +116,10 @@ App = Newman::Application.new do
     
     def update_existing_event(&upd)
       event_list(params[:list_id]).update(params[:event_id].to_i, &upd)
+    end
+
+    def destroy_existing_event
+      event_list(params[:list_id]).destroy(params[:event_id].to_i)
     end
     
     # note this only is reliable if we store canonical email addresses
@@ -155,7 +171,7 @@ App = Newman::Application.new do
     event_id = rec.id
     
     forward_message(
-        :from     => "On behalf of #{sender} <#{settings.service.default_sender}>",
+        :from     => "On behalf of #{sender_name} <#{settings.service.default_sender}>",
         :to       => '',
         :bcc      => subscribers.join(', '),
         :reply_to => availability_address(params[:list_id], event_id)
@@ -268,6 +284,44 @@ App = Newman::Application.new do
 
   end
   
+  to(:tag, EVENT_CANCEL) do
+   
+    logger.debug("NEWMAN-SCHEDULER: EVENT-SCHED") { params.inspect }
+
+    unless subscriber?(sender)
+      #TODO sender is not a subscriber -- or handle downstream?
+      next
+    end
+    
+    #TODO possibly should also check if sender == event proposer ?
+    
+    unless existing_event
+      respond(
+        :from    => "Scheduler <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- no event found",
+        :body    => template('shared/no_event',
+                               :list_id  => params[:list_id],
+                               :event_id => params[:event_id]
+                            )
+      )
+      next
+    end
+    
+    destroy_existing_event
+    
+    forward_message(
+      :from    => "On behalf of #{sender_name} <#{settings.service.default_sender}>",
+      :to      => '',
+      :bcc     => subscribers.join(', ')
+    )
+    
+    add_response_header template('event/_cancel', 
+                                 :event    => existing_event,
+                                 :list_id  => params[:list_id],
+                                 :event_id => params[:event_id]
+                        )
+  end
+  
   to(:tag, EVENT_USAGE) do
         
     logger.debug("NEWMAN-SCHEDULER: EVENT-USAGE") { params.inspect }
@@ -311,8 +365,9 @@ SimpleMailingList = Newman::Application.new do
     end
         
     def reply_subject
+      orig = request.subject || ''
       [ "RE:",
-         request.subject.gsub(/^RE:/i,"")
+         orig.gsub(/^RE:/i,"")
       ].join(" ")
     end
     
