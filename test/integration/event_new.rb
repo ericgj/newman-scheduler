@@ -130,7 +130,7 @@ module IntegrationTests
       
       [:basic, :simple_subject].each do |fix|
       
-        it 'should create event' do
+        it "should create event (#{fix})" do
           fixture = Fixtures[fix]
           subscribers = [fixture[:email],
                          'dummy1@example.com',
@@ -153,7 +153,7 @@ module IntegrationTests
           assert_equal fixture[:expected_range], event.range
         end
         
-        it 'should forward "requesting availability" email' do
+        it "should forward 'requesting availability' email (#{fix})" do
           fixture = Fixtures[fix]
           subscribers = [fixture[:email],
                          'dummy1@example.com',
@@ -198,7 +198,7 @@ module IntegrationTests
       
       [:no_range_or_duration, :no_duration].each do |fix|
           
-        it 'should not create event' do
+        it "should not create event (#{fix})" do
           fixture = Fixtures[fix]
           subscribers = [fixture[:email],
                          'dummy1@example.com',
@@ -212,7 +212,7 @@ module IntegrationTests
 
         end
         
-        it 'should reply "invalid syntax" email' do
+        it "should reply 'invalid syntax' email (#{fix})" do
           fixture = Fixtures[fix]
           subscribers = [fixture[:email],
                          'dummy1@example.com',

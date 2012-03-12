@@ -27,9 +27,9 @@ class Event < DelegateClass(::Portera::Event)
     attr_accessor :name, :duration, :range
     
     FIELD_SEP        = "|"
-    NAME_MATCHER     = /^\s*(Availability\s+for){0,1}\s*\b(.+)\b\s*$/i
+    NAME_MATCHER     = /^\s*(Availability\s+for){0,1}\s*(.+)\s*$/i
     DURATION_MATCHER = /^\s*(\d+)/
-    RANGE_MATCHER    = /^\s*(week\s+of|on)\s+\b(.+)\b\s*$/i
+    RANGE_MATCHER    = /^\s*(week\s+of|on)\s+(.+)\s*$/i
     
     def initialize(email)
       self.raw = email
@@ -48,7 +48,7 @@ class Event < DelegateClass(::Portera::Event)
     
     def parse_name(expr)
       return nil unless expr
-      expr[NAME_MATCHER, 2]
+      expr[NAME_MATCHER, 2].strip
     end
     
     def parse_range_expr(expr)

@@ -7,7 +7,6 @@ class Participant < DelegateClass(::Portera::Participant)
     partic = new
     partic.name  = parsed.name  || defaults[:name]
     partic.email = parsed.email || defaults[:email]
-    partic.range = parsed.range  || defaults[:range]
     partic.available( parsed.utc_offset || defaults[:utc_offset] ) do
       parsed.availables.each do |avail|
         on avail.days, :from => avail.from, :to => avail.to
@@ -15,23 +14,40 @@ class Participant < DelegateClass(::Portera::Participant)
     end
     partic
   end
+    
   
-  # the week range this participant/availability defines
-  attr_accessor :range
+  attr_accessor :errors
   
   def initialize(*args)
     super(::Portera::Participant.new(*args))
+    self.errors = []
   end
+  
+  def available(*args, &blk)
+    super
+  rescue => e
+    errors << e.to_s
+  end
+  
+  def valid?
+    validate; errors.empty?
+  end
+  
+  def validate
+    errors << "No name specified" unless name
+    errors << "No email specified" unless email
+    errors << "No available times specified" unless availables.count > 0
+  end
+  
   
   # Internal parser class for extracting participant/availability data from 
   # mail message
   class Email
   
-    attr_accessor :name, :email, :utc_offset, :range, :availables
+    attr_accessor :name, :email, :utc_offset, :availables
     
     Available = Struct.new(:days, :from, :to)
     
-    RANGE_MATCHER      = /^\s*([^\s]+)/i
     OFFSET_MATCHER     = /\s*([\-\+]\d\d\:\d\d)\s*$/i
     TIME_RANGE_MATCHER = /^\s*([^\s]+)\s*\-\s*([^\s]+)\s*$/i
     
@@ -39,7 +55,6 @@ class Participant < DelegateClass(::Portera::Participant)
       self.raw = email
       self.availables = []
       parse_from
-      parse_subject
       parse_body
     end
     
@@ -51,27 +66,24 @@ class Participant < DelegateClass(::Portera::Participant)
       self.name  = raw[:from].display_names.first
     end
     
-    def parse_subject
-      if RANGE_MATCHER =~ raw.subject
-        parse_range $1
-      else
-        parse_range raw.date.to_s
-      end
-      if OFFSET_MATCHER =~ raw.subject
-        parse_offset $1
-      else
-        parse_offset '+00:00'
-      end
-    end
-    
     def parse_body
-      state = nil
+      state = :init
       raw_lines.inject([]) do |current_days, line|
         clean_line = line.chomp.strip
         if clean_line.empty?
-          state = nil; next []
+          state = nil unless state == :init; next []
         end
         case state
+        when :init
+          if OFFSET_MATCHER =~ clean_line
+            parse_offset $1
+            state = nil
+          else
+            parse_available_days(clean_line) do |days|
+              current_days = days
+            end
+            state = :times
+          end
         when nil
           parse_available_days(clean_line) do |days|
             current_days = days
@@ -88,15 +100,6 @@ class Participant < DelegateClass(::Portera::Participant)
         end
         current_days
       end  
-    end
-    
-    def parse_range(dtexpr)
-      dt = Time.parse(dtexpr) rescue nil
-      unless dt
-        self.range = nil; return
-      end
-      monday = dt.to_date + (1 - (dt.to_date.wday%7))
-      self.range = monday...(monday+7)
     end
     
     def parse_offset(offexpr)

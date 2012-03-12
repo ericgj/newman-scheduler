@@ -1,15 +1,15 @@
 GIT
   remote: https://github.com/ericgj/portera.git
-  revision: cdd61a00bcc497f542effb608ee203bee944f6cb
+  revision: a7f7d6713d18c011bcb82065629b1246a0368553
   specs:
-    portera (0.1.3)
+    portera (0.1.4)
       erubis
       tempr (>= 0.1.4)
       tilt
 
 GIT
   remote: https://github.com/mendicant-university/newman.git
-  revision: 97c3747bdf126796202ce4133ecd021d9d5bddba
+  revision: 909f8b817f2832568a33f27ba9bbe7e4cebcc819
   specs:
     newman (0.4.0)
       mail (= 2.3.0)

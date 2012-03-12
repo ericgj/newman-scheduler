@@ -70,6 +70,12 @@ App = Newman::Application.new do
       response.body = lines.join("\r\n")
     end
     
+    def reply_subject
+      [ "RE:",
+         request.subject.gsub(/^RE:/i,"")
+      ].join(" ")
+    end
+    
     def usage_response
       respond(
         :from    => "Scheduler usage <#{settings.service.default_sender}>",
@@ -84,6 +90,15 @@ App = Newman::Application.new do
       @new_event ||= Event.from_email(request)
     end
     
+    def existing_event
+      @existing_event ||= event_list(params[:list_id]).
+                            read(params[:event_id].to_i).contents
+    end
+    
+    def update_existing_event(&upd)
+      event_list(params[:list_id]).update(params[:event_id].to_i, &upd)
+    end
+    
   end
 
 
@@ -91,18 +106,20 @@ App = Newman::Application.new do
   match :new,          "new"
   match :availability, "avail"
   match :schedule,     "sched"
+  match :cancel,       "cancel"
   match :usage,        "usage"
-  match :event_id,     "\d+"
+  match :event_id,     "[^\.]+"
   
-  EVENT_NEW   = "{list_id}.event-{new}"
-  EVENT_AVAIL = "{list_id}.event-{availability}-{event_id}"
-  EVENT_SCHED = "{list_id}.event-{schedule}-{event_id}"
-  EVENT_USAGE = "{list_id}.event-{usage}"
+  EVENT_NEW    = "{list_id}.event-{new}"
+  EVENT_AVAIL  = "{list_id}.event-{availability}-{event_id}"
+  EVENT_SCHED  = "{list_id}.event-{schedule}-{event_id}"
+  EVENT_CANCEL = "{list_id}.event-{cancel}-{event_id}"
+  EVENT_USAGE  = "{list_id}.event-{usage}"
   
   
   to(:tag, EVENT_NEW) do
     
-    logger.debug("NEWMAN-SCHEDULER: EVENT-NEW") { {:to => request.to}.inspect }
+    logger.debug("NEWMAN-SCHEDULER: EVENT-NEW") { params.inspect }
     
     unless subscriber?(sender)
       #TODO sender is not a subscriber
@@ -112,7 +129,7 @@ App = Newman::Application.new do
     unless new_event.name && new_event.range && new_event.duration
       respond(
         :from    => "Scheduler usage <#{settings.service.default_sender}>",
-        :subject => "RE: #{request.subject} -- invalid syntax",
+        :subject => reply_subject + " -- invalid syntax",
         :body    => template('event/new_invalid',
                                :list_id  => params[:list_id]
                             )
@@ -137,11 +154,44 @@ App = Newman::Application.new do
     
   end
  
+
+  to(:tag, EVENT_AVAIL) do
+    
+    logger.debug("NEWMAN-SCHEDULER: EVENT-AVAIL") { params.inspect }
+    
+    unless subscriber?(sender)
+      #TODO sender is not a subscriber
+      next
+    end
+    
+    unless existing_event
+      #TODO no such event
+      next
+    end
+    
+    partic = Participant.from_email(request)
+    
+    unless partic.valid?
+      #TODO invalid syntax
+      next
+    end
+    
+    update_existing_event do |event|
+      event.participants.delete_if {|p| p.email == partic.email}
+      event.participants << partic
+      event
+    end
+   
+    respond(
+      :from    => "Scheduler <#{settings.service.default_sender}>",
+      :subject => reply_subject,
+      :body    => template('availability/confirmation',
+                             :event    => existing_event,
+                             :list_id  => params[:list_id],
+                             :event_id => params[:event_id]
+                          )
+    )
+    
+  end
   
 end
-
-__END__
-
-  to :tag, EVENT_USAGE, &method(:usage_response)
-  
-  default &method(:usage_response)
