@@ -1,2 +1,5 @@
 require_relative 'event'
 require_relative 'participant'
+require_relative 'integration/event_new'
+require_relative 'integration/event_avail'
+require_relative 'integration/event_sched'

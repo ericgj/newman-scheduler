@@ -49,6 +49,7 @@ can simply reply to the email with their availability.
     Subject: RE: Availability for a picnic
 
     Mon Tue Thu
+    00:00 - 24:59
     
 ------
     
@@ -56,8 +57,9 @@ can simply reply to the email with their availability.
     To: c+firefly.event-avail-12345@test.com
     Subject: RE: Availability for a picnic
 
+    -04:00
     Mon Tue Wed Thu Fri
-    11:00 - 14:00  -04:00
+    11:00 - 14:00
     
     
 #### 3. Request a list of the current best available times for the event.
@@ -116,9 +118,8 @@ Note any participant can request this. Sender gets the response:
 
 ### Remaining work
 
-  - revise interfaces
-  - revise event model
-  - revise participant model
+  - event-usage
+  - event-cancel
   
 
 ### License

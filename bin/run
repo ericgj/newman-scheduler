@@ -1,6 +1,16 @@
 #!/usr/bin/env ruby
+require 'logger'
 
-require File.expand_path('app', File.dirname(__FILE__))
+require File.expand_path('../app', File.dirname(__FILE__))
 
-Newman::Server.simple(App, 'config/environment.rb')
+settings_file = File.expand_path('../config/environment.rb', File.dirname(__FILE__))
+log_file = File.expand_path('../log/development.log', File.dirname(__FILE__))
+
+settings     = Newman::Settings.from_file(settings_file)
+mailer       = Newman::Mailer.new(settings)
+server       = Newman::Server.new(settings, mailer)
+server.apps  = [Newman::RequestLogger, App, SimpleMailingList, Newman::ResponseLogger]
+server.logger = ::Logger.new(log_file)
+server.run
+
 

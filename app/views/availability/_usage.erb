@@ -1,4 +1,52 @@
----
-## HOW TO SEND YOUR AVAILABILITY FOR EVENT *<%= event.name %>* TO THE LIST *<%= list_id %>*
+## HOW TO SEND YOUR AVAILABILITY FOR AN EVENT TO THE LIST *<%= list_id %>*
 
-todo
+Once someone proposes an event to the list, you'll get an email to which you can
+reply with your availability. Or you can send an email directly to
+   
+   <%= availability_address(list_id, 'n') %>
+   
+where 'n' is the sequential ID assigned to the event (typically 1, unless
+multiple events have been scheduled for the list).
+
+The *subject* of the email is ignored by the scheduler, and can be whatever you
+want.
+
+The *body* of the email must follow the following syntax rules. For this reason,
+when replying you should **delete previous messages** and start with a blank
+email body.
+
+**(Note these rules may change, so stay tuned!)**
+
+1. The first non-blank line of the email *may* contain your timezone offset,
+expressed as +HH:MM or -HH:MM. (Note that timezone abbreviations are *not* 
+currently accepted). If you don't specify a timezone offset, all times will be
+interpreted as UTC (+00:00).
+
+2. The rest of the email *must* contain one or more _sets of available days and 
+times_, divided by one or more blank lines.
+
+3. A _set of available days and times_ consists of a single line with days of 
+the week, followed by one or more lines with time ranges representing available
+periods during each of the days.  So for example here are two sets of 
+availability:
+
+    Monday Wednesday Friday
+    11am - 2pm
+    4pm - 6:30pm
+    
+    Thursday
+    10am - 1pm
+    
+4. Note that the days of the week will be interpreted based on the dates 
+proposed for the event. So if the event is scheduled for a single day (instead
+of sometime within a week), you should specify your availability for the day of 
+the week that day falls on.
+
+5. Three-letter day of the week abbreviations can be used: Mon,Tue,Wed, etc.,
+as well as one/two-letter abbreviations: M,Tu,W,Th,F,Sa,Su . Capitalization and 
+extra spacing are ignored.
+
+6. Times are in 12- or 24- hour format, with or without minutes. Anything that
+ruby can parse as a time, basically. They are separated by a hyphen, and extra
+spacing is ignored.
+

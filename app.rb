@@ -30,6 +30,11 @@ App = Newman::Application.new do
       mailing_list(params[:list_id]).subscribers
     end
     
+    # needed for gmail's stickler SMTP
+    def subscriber_addresses
+      subscribers.map {|sub| "#{sub} <#{sub}>"}
+    end
+    
     def subscriber?(addr)
       mailing_list(params[:list_id]).subscriber?(addr)
     end
@@ -47,32 +52,33 @@ App = Newman::Application.new do
     end
     
     def new_event_address(list_id)
-      "#{default_sender_username}+#{list_id}.event-new@#{domain}"
+      "Scheduler <#{default_sender_username}+#{list_id}.event-new@#{domain}>"
     end
 
     def availability_address(list_id, event_id)
-      "#{default_sender_username}+#{list_id}.event-avail-#{event_id}@#{domain}"
+      "Scheduler <#{default_sender_username}+#{list_id}.event-avail-#{event_id}@#{domain}>"
     end
 
     def schedule_address(list_id, event_id)
-      "#{default_sender_username}+#{list_id}.event-sched-#{event_id}@#{domain}"
+      "Scheduler <#{default_sender_username}+#{list_id}.event-sched-#{event_id}@#{domain}>"
     end
 
     def usage_address(list_id)
-      "#{default_sender_username}+#{list_id}.event-usage@#{domain}"
+      "Scheduler usage <#{default_sender_username}+#{list_id}.event-usage@#{domain}>"
     end
     
     # note this forces plain-text response currently
     def add_response_footer(text, divider="-----")
-      lines = response.decoded.split("\r\n")
+      lines = response.text_part.decoded.split("\r\n")
       lines << "" << divider << text
       response.body = nil
       response.body = lines.join("\r\n")
     end
     
     def reply_subject
+      orig = request.subject || ''
       [ "RE:",
-         request.subject.gsub(/^RE:/i,"")
+         orig.gsub(/^RE:/i,"")
       ].join(" ")
     end
     
@@ -80,9 +86,10 @@ App = Newman::Application.new do
       respond(
         :from    => "Scheduler usage <#{settings.service.default_sender}>",
         :subject => "#{params[:list_id]} -- scheduler instructions",
-        :body    => template('events/usage', :list_id => params[:list_id])
+        :body    => template('shared/usage', :list_id => params[:list_id])
       )
     end
+
     
     # ----- accessors for use in views and to simplify controller code
     
@@ -121,14 +128,14 @@ App = Newman::Application.new do
   EVENT_SCHED  = "{list_id}.event-{schedule}-{event_id}"
   EVENT_CANCEL = "{list_id}.event-{cancel}-{event_id}"
   EVENT_USAGE  = "{list_id}.event-{usage}"
-  
+    
   
   to(:tag, EVENT_NEW) do
     
     logger.debug("NEWMAN-SCHEDULER: EVENT-NEW") { params.inspect }
     
     unless subscriber?(sender)
-      #TODO sender is not a subscriber
+      #TODO sender is not a subscriber -- or handle downstream?
       next
     end
     
@@ -147,8 +154,8 @@ App = Newman::Application.new do
     event_id = rec.id
     
     forward_message(
-        :from     => "On behalf of #{sender} <#{settings.service.default_sender}>",
-        :to       => nil,
+        :from     => "Scheduler <#{settings.service.default_sender}>",
+        :to       => '',
         :bcc      => subscribers.join(', '),
         :reply_to => availability_address(params[:list_id], event_id)
     )
@@ -166,7 +173,7 @@ App = Newman::Application.new do
     logger.debug("NEWMAN-SCHEDULER: EVENT-AVAIL") { params.inspect }
     
     unless subscriber?(sender)
-      #TODO sender is not a subscriber
+      #TODO sender is not a subscriber -- or handle downstream?
       next
     end
     
@@ -218,11 +225,13 @@ App = Newman::Application.new do
   
   to(:tag, EVENT_SCHED) do
    
-    if subscribers.empty?
-      # TODO no subscribers
+    logger.debug("NEWMAN-SCHEDULER: EVENT-SCHED") { params.inspect }
+
+    unless subscriber?(sender)
+      #TODO sender is not a subscriber -- or handle downstream?
       next
     end
-        
+            
     unless existing_event
       respond(
         :from    => "Scheduler <#{settings.service.default_sender}>",
@@ -256,6 +265,89 @@ App = Newman::Application.new do
       :body    => template('schedule/best', :event => event)
     )
 
+  end
+  
+  to(:tag, EVENT_USAGE) do
+        
+    logger.debug("NEWMAN-SCHEDULER: EVENT-USAGE") { params.inspect }
+    
+    unless subscriber?(sender)
+      #TODO sender is not a subscriber -- or handle downstream?
+      next
+    end
+  
+    usage_response  
+  end
+  
+  default do
+  end
+  
+end
+
+
+
+SimpleMailingList = Newman::Application.new do
+
+  helpers do
+
+    # ----- Store helpers
+    
+    def store(key=:database)
+      Newman::Store.new(settings.application.__send__(key))
+    end
+    
+    # list keyed by list_id; elements keyed by insertion order
+    def mailing_list(id)
+      Newman::MailingList.new(id, store)
+    end
+
+    def subscribers
+      mailing_list(params[:list_id]).subscribers
+    end
+    
+    def subscriber?(addr)
+      mailing_list(params[:list_id]).subscriber?(addr)
+    end
+        
+    def reply_subject
+      [ "RE:",
+         request.subject.gsub(/^RE:/i,"")
+      ].join(" ")
+    end
+    
+  end
+  
+  match :list_id,      "[^\.]+"
+
+  to(:tag, "{list_id}.subscribe") do
+    
+    unless subscriber?(sender)
+      
+      mailing_list(params[:list_id]).subscribe(sender)
+    
+      respond(
+        :from => "Scheduler <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- you are subscribed"
+      )
+    end
+  
+  end
+
+  to(:tag, "{list_id}.unsubscribe") do
+    
+    if subscriber?(sender)
+      
+      mailing_list(params[:list_id]).unsubscribe(sender)
+    
+      respond(
+        :from => "Scheduler <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- you are unsubscribed"
+      )
+    end
+  
+  end
+  
+  default do
   end
   
 end
