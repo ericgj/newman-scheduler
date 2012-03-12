@@ -1,0 +1,8 @@
+Sorry, your message "<%= request.subject %>" to 
+<% request.to.each do |addr| %>
+  <%= addr %>
+<% end %>
+refers to an event that doesn't seem to exist (id=<%= event_id %>).
+
+Please check that you have the correct address, and that the event hasn't been
+cancelled.

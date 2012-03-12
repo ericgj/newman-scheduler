@@ -130,7 +130,7 @@ App = Newman::Application.new do
       respond(
         :from    => "Scheduler usage <#{settings.service.default_sender}>",
         :subject => reply_subject + " -- invalid syntax",
-        :body    => template('event/new_invalid',
+        :body    => template('event/invalid',
                                :list_id  => params[:list_id]
                             )
       )
@@ -165,14 +165,30 @@ App = Newman::Application.new do
     end
     
     unless existing_event
-      #TODO no such event
+      respond(
+        :from    => "Scheduler <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- no event found",
+        :body    => template('availability/no_event',
+                               :list_id  => params[:list_id],
+                               :event_id => params[:event_id]
+                            )
+      )
       next
     end
     
     partic = Participant.from_email(request)
     
     unless partic.valid?
-      #TODO invalid syntax
+      respond(
+        :from    => "Scheduler usage <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- invalid syntax",
+        :body    => template('availability/invalid',
+                               :event       => existing_event,
+                               :participant => partic,
+                               :list_id     => params[:list_id],
+                               :event_id    => params[:event_id]
+                            )
+      )
       next
     end
     
