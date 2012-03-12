@@ -118,9 +118,6 @@ Note any participant can request this. Sender gets the response:
 
 ### Remaining work
 
-  - event-usage
-  - event-cancel
-  
 
 ### License
 
