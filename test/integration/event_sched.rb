@@ -3,7 +3,7 @@
 require File.expand_path('../test_helper', File.dirname(__FILE__))
 
 module IntegrationTests
-  module EventAvail
+  module EventSched
   
     module Helpers
       include IntegrationTests::Helpers
@@ -38,13 +38,13 @@ module IntegrationTests
       end
       
       def create_event_from_fixture(fix)
-        fixture = EventAvail::Fixtures[fix]
+        fixture = EventSched::Fixtures[fix]
         list_id = fixture[:list_id]
         event_list(list_id).create(fixture_event(fix))
       end
       
       def fixture_message(fix)
-        fixture = EventAvail::Fixtures[fix]
+        fixture = EventSched::Fixtures[fix]
         {
           :from => fixture[:from],
           :to   => fixture[:to],
@@ -54,7 +54,7 @@ module IntegrationTests
       end
       
       def fixture_event(fix)
-        fixture = EventAvail::Fixtures[fix]
+        fixture = EventSched::Fixtures[fix]
         Event.new(fixture[:name]) do
           duration fixture[:duration]
           range    fixture[:range]

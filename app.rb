@@ -67,9 +67,21 @@ App = Newman::Application.new do
       "Scheduler usage <#{default_sender_username}+#{list_id}.event-usage@#{domain}>"
     end
 
+    def response_body_lines
+      if response.multipart?
+        response.text_part.decoded.split("\r\n")
+      else
+        if response.body
+          response.body.decoded.split("\r\n")
+        else
+          []
+        end
+      end   
+    end
+    
     # note this forces plain-text response currently
     def add_response_header(text, divider="-----")
-      lines = response.text_part.decoded.split("\r\n")
+      lines = response_body_lines
       lines = [text, "", divider] + lines 
       response.body = nil
       response.body = lines.join("\r\n")
@@ -77,7 +89,7 @@ App = Newman::Application.new do
     
     # note this forces plain-text response currently
     def add_response_footer(text, divider="-----")
-      lines = response.text_part.decoded.split("\r\n")
+      lines = response_body_lines
       lines << "" << divider << text
       response.body = nil
       response.body = lines.join("\r\n")

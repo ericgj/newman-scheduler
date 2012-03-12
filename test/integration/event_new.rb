@@ -61,7 +61,7 @@ module IntegrationTests
         :expected_name     => 'a picnic',
         :expected_duration => 90,
         :expected_range    => Date.civil(2012,3,12)...Date.civil(2012,3,19),
-        :expected_response_from     => "On behalf of snoopymcbeagle@example.com <test@test.com>",
+        :expected_response_from     => "On behalf of Sal <test@test.com>",
         :expected_reply_to          => "test+list.event-avail-1@test.com",
         :expected_response_subject  => "Availability for a picnic | week of Mar 12 | 90",
         :expected_response_matchers => []
@@ -76,7 +76,7 @@ module IntegrationTests
         :expected_name     => 'A picnic',
         :expected_duration => 90,
         :expected_range    => Date.civil(2012,3,12)...Date.civil(2012,3,19),
-        :expected_response_from     => "On behalf of snoopymcbeagle@example.com <test@test.com>",
+        :expected_response_from     => "On behalf of Sal <test@test.com>",
         :expected_reply_to          => "test+list.event-avail-1@test.com",
         :expected_response_subject  => "A picnic | week of Mar 12 | 90",
         :expected_response_matchers => []
@@ -95,7 +95,7 @@ module IntegrationTests
         :expected_reply_to          => [],
         :expected_response_subject  => "RE: A picnic -- invalid syntax",
         :expected_response_matchers => [%r{Sorry, your message "A picnic"},
-                                        %r{## HOW TO PROPOSE AN EVENT TO THE LIST list}
+                                        %r{## HOW TO PROPOSE AN EVENT TO THE LIST}
                                        ]
       },
       :no_duration => {
@@ -112,7 +112,7 @@ module IntegrationTests
         :expected_reply_to          => [],
         :expected_response_subject  => "RE: A picnic | week of Mar 12 -- invalid syntax",
         :expected_response_matchers => [%r{Sorry, your message "A picnic | week of Mar 12"},
-                                        %r{## HOW TO PROPOSE AN EVENT TO THE LIST list}
+                                        %r{## HOW TO PROPOSE AN EVENT TO THE LIST}
                                        ]
       }
 
