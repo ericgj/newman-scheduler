@@ -1,0 +1,10 @@
+Sorry, the current best schedule times for the event *<%= event.name %>*
+cannot be determined because less than 2 participants have sent in their
+availability.
+
+The following *<%= list_id %>* list subscribers need to provide their 
+availability:
+
+<% missing_subscribers.each do |email| %>
+<%= email %>
+<% end %>

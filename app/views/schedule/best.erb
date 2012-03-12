@@ -1,0 +1,19 @@
+<%= event.participants.count %> of <%= subscribers.count %> have responded.<% unless missing_subscribers.empty? %>*<% end %>
+
+For <%= event.range %> (<%= event.duration %>)
+------------------------------
+<% event.minimum_participants(2).each do |slot, participants| -%>
+<%= slot %>
+  <% participants.each do |partic| -%>
+  <%= partic %>
+  <% end -%>
+<% end -%>    
+
+<% unless missing_subscribers.empty? %>
+
+[*] Availability still needed for:
+
+  <% missing_subscribers.each do |email| %>
+<%= email %>
+  <% end %>
+<% end %>

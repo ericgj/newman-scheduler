@@ -99,6 +99,12 @@ App = Newman::Application.new do
       event_list(params[:list_id]).update(params[:event_id].to_i, &upd)
     end
     
+    # note this only is reliable if we store canonical email addresses
+    def missing_subscribers
+      @missing_subscribers ||= subscribers - 
+                               existing_event.participants.map(&:email)
+    end
+    
   end
 
 
@@ -168,7 +174,7 @@ App = Newman::Application.new do
       respond(
         :from    => "Scheduler <#{settings.service.default_sender}>",
         :subject => reply_subject + " -- no event found",
-        :body    => template('availability/no_event',
+        :body    => template('shared/no_event',
                                :list_id  => params[:list_id],
                                :event_id => params[:event_id]
                             )
@@ -208,6 +214,48 @@ App = Newman::Application.new do
                           )
     )
     
+  end
+  
+  to(:tag, EVENT_SCHED) do
+   
+    if subscribers.empty?
+      # TODO no subscribers
+      next
+    end
+        
+    unless existing_event
+      respond(
+        :from    => "Scheduler <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- no event found",
+        :body    => template('shared/no_event',
+                               :list_id  => params[:list_id],
+                               :event_id => params[:event_id]
+                            )
+      )
+      next
+    end
+    
+    event = Presenters::SimpleEvent.new(existing_event)
+    
+    if event.participants.count < 2
+      respond(
+        :from    => "Scheduler <#{settings.service.default_sender}>",
+        :subject => reply_subject + " -- unable to select best times to meet",
+        :body    => template('schedule/no_participants', 
+                               :event => event,
+                               :list_id  => params[:list_id],
+                               :event_id => params[:event_id]
+                            )
+      )
+      next
+    end
+    
+    respond(
+      :from    => "Scheduler <#{settings.service.default_sender}>",
+      :subject => reply_subject,
+      :body    => template('schedule/best', :event => event)
+    )
+
   end
   
 end
