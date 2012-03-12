@@ -10,8 +10,11 @@ class Event < DelegateClass(::Portera::Event)
     end
   end
   
+  attr_accessor :errors
+  
   def initialize(*args, &init)
     super(::Portera::Event.new(*args, &init))
+    self.errors = []
   end
   
   # accessor for week in which start of range falls (starting on monday)
@@ -20,6 +23,18 @@ class Event < DelegateClass(::Portera::Event)
     start = range.begin + (1 - (range.begin.wday%7))
     start...(start+7)
   end
+
+  
+  def valid?
+    validate; errors.empty?
+  end
+  
+  def validate
+    errors << "No name specified" unless name
+    errors << "No duration specified" unless duration
+    errors << "No date range specified" unless range
+  end
+  
   
   # Internal parser class for extracting name, duration, range from mail message
   class Email

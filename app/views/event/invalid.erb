@@ -1,7 +1,12 @@
 Sorry, your message "<%= request.subject %>"
 couldn't be understood by the scheduler. 
 
+<% event.errors.each do |err| %>
+- <%= err %>
+<% end %>
+
 You must specify a *range* and *duration* for the event in the subject line.
+See below for syntax rules.
 
 -----
 <%= template('event/_usage_new', :list_id => list_id) %>

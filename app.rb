@@ -139,11 +139,12 @@ App = Newman::Application.new do
       next
     end
     
-    unless new_event.name && new_event.range && new_event.duration
+    unless new_event.valid?
       respond(
         :from    => "Scheduler usage <#{settings.service.default_sender}>",
         :subject => reply_subject + " -- invalid syntax",
         :body    => template('event/invalid',
+                               :event => new_event,
                                :list_id  => params[:list_id]
                             )
       )
@@ -154,7 +155,7 @@ App = Newman::Application.new do
     event_id = rec.id
     
     forward_message(
-        :from     => "Scheduler <#{settings.service.default_sender}>",
+        :from     => "On behalf of #{sender} <#{settings.service.default_sender}>",
         :to       => '',
         :bcc      => subscribers.join(', '),
         :reply_to => availability_address(params[:list_id], event_id)
